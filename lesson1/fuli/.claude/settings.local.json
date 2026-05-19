@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vite *)",
+      "WebFetch(domain:localhost)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:cdnjs.cloudflare.com)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "WebFetch(domain:api.cdnjs.com)",
+      "Bash(grep -oP '.{0,50}import.{0,50}' \"复利研究所.html\")",
+      "Bash(curl -sI \"https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js\")",
+      "Bash(grep -o '.{0,80}modulepreload.{0,80}\\\\|.{0,80}fetch\\(e.href.{0,80}' \"复利研究所.html\")",
+      "Bash(git *)",
+      "Bash(gh auth *)",
+      "Bash(ping -n 2 github.com)",
+      "Bash(nslookup github.com)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(mkdir -p ~/.ssh)",
+      "Bash(ssh-keyscan github.com)",
+      "Bash(ssh-keygen *)"
+    ]
+  }
+}
