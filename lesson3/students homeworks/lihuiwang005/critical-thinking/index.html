@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>批判性思维学习网页</title>
+  <meta
+    name="description"
+    content="一个围绕批判性思维的深度学习网页，包含概念总览、方法、误区、案例、名言、练习和外部资料。"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top">批判性思维</a>
+      <nav class="primary-nav" aria-label="主要章节">
+        <a href="#overview">概念</a>
+        <a href="#methods">方法</a>
+        <a href="#misconceptions">误区</a>
+        <a href="#cases">案例</a>
+        <a href="#quotes">名言</a>
+        <a href="#practice">练习</a>
+        <a href="#resources">资料</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero band" id="top">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">学习网页 · 深入理解与练习</p>
+          <h1>批判性思维</h1>
+          <p class="hero-lead">
+            把信息、假设、证据和结论拆开看，再把它们重新连起来，做出更稳的判断。
+          </p>
+
+          <div class="focus-strip" aria-label="思考轴">
+            <button class="focus-chip is-active" type="button" data-focus="question">问题</button>
+            <button class="focus-chip" type="button" data-focus="evidence">证据</button>
+            <button class="focus-chip" type="button" data-focus="reasoning">推理</button>
+            <button class="focus-chip" type="button" data-focus="counter">反例</button>
+            <button class="focus-chip" type="button" data-focus="conclusion">结论</button>
+          </div>
+
+          <p class="hero-focus-note" id="hero-focus-note">
+            先确认命题是否清楚、可验证，再进入判断。
+          </p>
+
+          <div class="hero-actions">
+            <a class="button button-primary" href="#overview">开始学习</a>
+            <a class="button button-secondary" href="#practice">进入练习</a>
+          </div>
+
+          <dl class="hero-stats">
+            <div>
+              <dt>方法</dt>
+              <dd>5</dd>
+            </div>
+            <div>
+              <dt>误区</dt>
+              <dd>4</dd>
+            </div>
+            <div>
+              <dt>案例</dt>
+              <dd>4</dd>
+            </div>
+            <div>
+              <dt>练习</dt>
+              <dd>3</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <canvas id="hero-canvas"></canvas>
+          <div class="hero-caption">
+            <span class="hero-caption-label">思维图谱</span>
+            <span class="hero-caption-text">问题 · 证据 · 推理 · 反例 · 结论</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="overview">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">概念总览</p>
+            <h2>先建立清晰定义，再进入方法与应用</h2>
+          </div>
+          <p class="section-intro">
+            这一部分把批判性思维拆成定义、边界、历史线索和核心判断标准，帮助用户快速形成稳定认知。
+          </p>
+        </div>
+
+        <div class="overview-grid">
+          <article class="panel overview-panel overview-panel-large">
+            <h3>它是什么</h3>
+            <p>
+              批判性思维不是“反对一切”，而是对信息、假设与论证进行审慎评估，追问依据是否充分、推理是否成立、结论是否可被修正。
+            </p>
+            <ul class="bullet-list">
+              <li>关注主张是否能被验证</li>
+              <li>关注证据是否相关、独立、充足</li>
+              <li>关注推理链条是否完整</li>
+              <li>关注自己的偏见和盲点</li>
+            </ul>
+          </article>
+
+          <article class="panel overview-panel">
+            <h3>它不是什么</h3>
+            <div class="compare-list">
+              <div>
+                <strong>不是抬杠</strong>
+                <p>目标不是赢辩论，而是提高判断质量。</p>
+              </div>
+              <div>
+                <strong>不是怀疑一切</strong>
+                <p>怀疑只是起点，关键是找到更好的证据和解释。</p>
+              </div>
+              <div>
+                <strong>不是只看立场</strong>
+                <p>立场可以被尊重，但判断必须回到事实和逻辑。</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel overview-panel">
+            <h3>历史线索</h3>
+            <ul class="timeline-list">
+              <li><span>1910</span> Dewey 将 reflective thinking 作为教育中的重要能力来讨论。</li>
+              <li><span>20 世纪中叶</span> 逻辑、教育与科学方法逐渐被整合进思维训练。</li>
+              <li><span>当代</span> 信息密度更高，批判性思维成为判断信息质量的基础能力。</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-alt" id="methods">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">核心方法</p>
+            <h2>把思考动作拆成可执行步骤</h2>
+          </div>
+          <p class="section-intro">
+            每个方法都对应不同的问题：先问清楚，再拆结构，接着比较与评估，最后回看自己的前提。
+          </p>
+        </div>
+
+        <div class="split-layout">
+          <div class="rail" id="methods-rail" role="tablist" aria-label="方法列表"></div>
+          <article class="panel detail-panel" id="methods-detail" aria-live="polite"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="misconceptions">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">误区与辨析</p>
+            <h2>把容易混淆的理解拉开</h2>
+          </div>
+          <p class="section-intro">
+            误区模块强调辨别：哪些是看似合理、其实会损坏判断的习惯。
+          </p>
+        </div>
+
+        <div class="split-layout">
+          <div class="rail rail-tight" id="misconception-rail" role="tablist" aria-label="误区列表"></div>
+          <article class="panel detail-panel" id="misconception-detail" aria-live="polite"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-alt" id="cases">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">案例分析</p>
+            <h2>从场景出发，把推理过程摊开看</h2>
+          </div>
+          <p class="section-intro">
+            案例用固定结构展示背景、表面结论、可疑点、证据和最终判断，便于对比和复用。
+          </p>
+        </div>
+
+        <div class="split-layout">
+          <div class="rail" id="case-rail" role="tablist" aria-label="案例列表"></div>
+          <article class="panel detail-panel" id="case-detail" aria-live="polite"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="quotes">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">名人名言</p>
+            <h2>用短句补强判断的尺度</h2>
+          </div>
+          <p class="section-intro">
+            这里收录可追溯的短引文和释义，用来帮助用户记住“不要轻信，也不要只会怀疑”。
+          </p>
+        </div>
+
+        <div class="toolbar">
+          <div class="chip-group" id="quote-filters" aria-label="名言筛选"></div>
+        </div>
+
+        <div class="quote-layout">
+          <article class="panel quote-spotlight" id="quote-spotlight" aria-live="polite"></article>
+          <div class="quote-grid" id="quote-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-alt" id="practice">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">实践练习</p>
+            <h2>把概念用到一个判断里</h2>
+          </div>
+          <p class="section-intro">
+            练习模块用短场景、选择题和反馈解释，把“看懂”推进到“会用”。
+          </p>
+        </div>
+
+        <div class="split-layout">
+          <div class="rail rail-tight" id="practice-rail" role="tablist" aria-label="练习列表"></div>
+          <article class="panel detail-panel" id="practice-detail" aria-live="polite"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="resources">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">外部资料</p>
+            <h2>把权威网页接进来</h2>
+          </div>
+          <p class="section-intro">
+            资源库保留来源、分类和跳转链接；支持关键词过滤，也可以直接把关键词送去外部搜索。
+          </p>
+        </div>
+
+        <div class="resource-toolbar">
+          <label class="search-field">
+            <span>检索</span>
+            <input id="resource-search" type="search" placeholder="输入关键词，例如：证据、教育、判断" />
+          </label>
+          <button class="button button-secondary" id="external-search" type="button">外网搜索 ↗</button>
+        </div>
+
+        <div class="toolbar">
+          <div class="chip-group" id="resource-filters" aria-label="资料筛选"></div>
+        </div>
+
+        <div class="resource-grid" id="resource-grid"></div>
+      </div>
+    </section>
+
+    <footer class="band footer-band">
+      <div class="shell footer-grid">
+        <div>
+          <p class="eyebrow">来源说明</p>
+          <p class="footer-copy">
+            概念与资料引用参考 Britannica、Internet Encyclopedia of Philosophy、Stanford Encyclopedia of Philosophy 和 Foundation for Critical Thinking。
+            站外链接仅做精选入口，不复制长段原文。
+          </p>
+        </div>
+        <div>
+          <p class="eyebrow">开发边界</p>
+          <p class="footer-copy">
+            这是一个单页静态实现，面向阅读、对照和练习，不依赖后端。
+          </p>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
