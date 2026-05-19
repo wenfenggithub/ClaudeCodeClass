@@ -1,0 +1,2075 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>复利学习 Demo</title>
+    <meta
+      name="description"
+      content="通过公式拆解、单利对比、长期案例和基础图表理解复利。"
+    >
+    <style>
+:root {
+  color-scheme: light;
+  --bg: #f6f8f4;
+  --surface: #ffffff;
+  --surface-soft: #eef4ef;
+  --ink: #17211d;
+  --muted: #5f6f69;
+  --line: #dbe4dd;
+  --green: #166b52;
+  --green-deep: #0f4d3e;
+  --teal: #2f8f88;
+  --amber: #c98218;
+  --rose: #b75c54;
+  --shadow: 0 18px 50px rgba(20, 46, 38, 0.1);
+  --radius: 8px;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px clamp(20px, 5vw, 72px);
+  background: rgba(246, 248, 244, 0.92);
+  border-bottom: 1px solid rgba(219, 228, 221, 0.8);
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 760;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, transparent 48%, rgba(255, 255, 255, 0.75) 50%, transparent 52%),
+    var(--green);
+  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.site-nav a {
+  padding: 8px 10px;
+  border-radius: 7px;
+}
+
+.site-nav a:hover {
+  background: var(--surface-soft);
+  color: var(--green-deep);
+}
+
+.section {
+  width: min(1160px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 78px 0;
+  scroll-margin-top: 72px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(380px, 1.05fr);
+  gap: 52px;
+  min-height: calc(100vh - 62px);
+  align-items: center;
+  padding-top: 54px;
+  padding-bottom: 40px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 780;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 680px;
+  margin-bottom: 22px;
+  font-size: 58px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: 36px;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+h3 {
+  margin-bottom: 10px;
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.hero-copy {
+  max-width: 580px;
+  color: var(--muted);
+  font-size: 19px;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.hero-metrics div,
+.step-card,
+.comparison-card,
+.result-grid article,
+.summary-grid article,
+.variable-grid article,
+.resource-grid article,
+.control-panel,
+.time-panel,
+.composition-card,
+.key-node-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.hero-metrics div {
+  padding: 18px;
+}
+
+.hero-metrics span,
+.result-grid span,
+.variable-grid span,
+.year-stats span,
+.composition-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.hero-metrics strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--green-deep);
+  font-size: 17px;
+}
+
+.hero-visual {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #ffffff, #f3f7f4);
+  box-shadow: var(--shadow);
+}
+
+.hero-visual svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hero-grid line {
+  stroke: #d7e2db;
+  stroke-width: 1;
+}
+
+.hero-invested,
+.hero-curve {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.hero-invested {
+  stroke: var(--amber);
+  stroke-width: 4;
+  stroke-dasharray: 8 8;
+}
+
+.hero-curve {
+  stroke: var(--green);
+  stroke-width: 6;
+}
+
+.hero-points circle {
+  fill: var(--surface);
+  stroke: var(--green);
+  stroke-width: 4;
+}
+
+.hero-visual text {
+  fill: var(--muted);
+  font-size: 14px;
+}
+
+.section-heading {
+  max-width: 760px;
+  margin-bottom: 30px;
+}
+
+.section-heading p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.intro-band {
+  border-top: 1px solid var(--line);
+}
+
+.step-grid,
+.comparison-grid,
+.summary-grid,
+.result-grid,
+.variable-grid,
+.resource-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.step-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.step-card,
+.comparison-card,
+.summary-grid article,
+.variable-grid article,
+.resource-grid article {
+  padding: 22px;
+}
+
+.step-card span,
+.summary-grid strong {
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.step-card p,
+.comparison-card p,
+.summary-grid p,
+.variable-grid p,
+.resource-grid p,
+.case-copy p,
+.check-list {
+  color: var(--muted);
+}
+
+.formula-layout {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.formula-layout .section-heading {
+  grid-column: 1 / -1;
+}
+
+.formula-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.formula-box {
+  padding: 28px;
+  border-radius: var(--radius);
+  background: var(--green-deep);
+  color: white;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 27px;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.formula-box.secondary {
+  background: #244f4a;
+  font-size: 20px;
+}
+
+.variable-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.variable-grid strong {
+  display: block;
+  color: var(--green-deep);
+  font-size: 24px;
+}
+
+.comparison-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparison-card.accent {
+  border-color: rgba(22, 107, 82, 0.35);
+  background: #f2f8f4;
+}
+
+.mini-formula {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #edf3ee;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 15px;
+  color: var(--green-deep);
+  overflow-wrap: anywhere;
+}
+
+.comparison-table-wrap,
+.case-table-wrap {
+  margin-top: 18px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 16px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+th {
+  color: var(--green-deep);
+  font-size: 14px;
+  background: #f1f6f2;
+}
+
+td {
+  color: var(--muted);
+}
+
+.case-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.early-case {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(420px, 1.28fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.early-case p:not(.eyebrow) {
+  color: var(--muted);
+}
+
+.case-copy {
+  padding: 24px;
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.check-list {
+  margin: 18px 0 0;
+  padding-left: 20px;
+}
+
+.check-list li + li {
+  margin-top: 8px;
+}
+
+.result-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.demo-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.34fr) minmax(0, 0.66fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.demo-main {
+  min-width: 0;
+}
+
+.control-panel {
+  position: sticky;
+  top: 92px;
+  padding: 20px;
+}
+
+.preset-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.preset-button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f7faf7;
+  color: var(--green-deep);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.preset-button:hover,
+.preset-button.is-active {
+  border-color: rgba(22, 107, 82, 0.45);
+  background: #e5f1ea;
+}
+
+.preset-button.danger {
+  color: #8b332f;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field-group label {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  gap: 10px;
+  align-items: center;
+}
+
+input,
+select,
+button {
+  letter-spacing: 0;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--green);
+}
+
+input[type="number"],
+select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.assumption-note {
+  margin: 18px 0 0;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f4f7f1;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.result-grid article {
+  padding: 20px;
+}
+
+.result-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--green-deep);
+  font-size: 25px;
+  line-height: 1.25;
+}
+
+.chart-panel {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.chart-header p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.chart-tools {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.view-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f6faf7;
+}
+
+.view-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.view-toggle label:has(input:checked) {
+  background: var(--surface);
+  color: var(--green-deep);
+  box-shadow: 0 4px 14px rgba(20, 46, 38, 0.08);
+}
+
+.view-toggle input {
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend span::before {
+  content: "";
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.legend-compound {
+  color: var(--green);
+}
+
+.legend-simple {
+  color: var(--teal);
+}
+
+.legend-invested {
+  color: var(--amber);
+}
+
+.chart-wrap {
+  position: relative;
+  min-height: 360px;
+}
+
+#growthChart {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 320px;
+  touch-action: none;
+}
+
+.chart-axis,
+.chart-grid {
+  stroke: #dbe4dd;
+  stroke-width: 1;
+}
+
+.chart-label {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.chart-path {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-compound {
+  stroke: var(--green);
+}
+
+.chart-simple {
+  stroke: var(--teal);
+}
+
+.chart-invested {
+  stroke: var(--amber);
+  stroke-dasharray: 8 8;
+}
+
+.chart-hover-line {
+  stroke: #98aaa2;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-marker {
+  fill: var(--surface);
+  stroke-width: 3;
+}
+
+.chart-selected-line {
+  stroke: var(--green-deep);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+}
+
+.chart-selected-dot {
+  fill: var(--surface);
+  stroke: var(--green-deep);
+  stroke-width: 4;
+}
+
+.chart-tooltip {
+  position: absolute;
+  min-width: 190px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(20, 46, 38, 0.14);
+  color: var(--ink);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.chart-tooltip strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--green-deep);
+}
+
+.chart-tooltip span {
+  display: block;
+  color: var(--muted);
+}
+
+.time-panel {
+  margin-top: 18px;
+  padding: 20px;
+}
+
+.time-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.time-panel-head h3 {
+  margin-bottom: 0;
+}
+
+.time-panel-head p {
+  max-width: 420px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: right;
+}
+
+.year-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.year-stats span {
+  padding: 12px;
+  border-radius: 7px;
+  background: #f6faf7;
+}
+
+.year-stats strong,
+.composition-list strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--green-deep);
+  font-size: 15px;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.composition-card,
+.key-node-card {
+  padding: 20px;
+}
+
+.composition-bar {
+  display: flex;
+  width: 100%;
+  height: 18px;
+  margin: 16px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf3ee;
+}
+
+.composition-bar span {
+  min-width: 0;
+  height: 100%;
+}
+
+.principal-segment {
+  background: var(--green-deep);
+}
+
+.contribution-segment {
+  background: var(--teal);
+}
+
+.gain-segment {
+  background: var(--amber);
+}
+
+.composition-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.composition-list i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.principal-dot {
+  background: var(--green-deep);
+}
+
+.contribution-dot {
+  background: var(--teal);
+}
+
+.gain-dot {
+  background: var(--amber);
+}
+
+.key-node-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.key-node-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f6faf7;
+}
+
+.key-node-card dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.key-node-card dd {
+  margin: 0;
+  color: var(--green-deep);
+  font-weight: 780;
+  text-align: right;
+}
+
+.risk-note {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(183, 92, 84, 0.28);
+  border-radius: var(--radius);
+  background: #fff4f1;
+  color: #8b332f;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.resource-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 920px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .site-nav {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .hero,
+  .formula-layout,
+  .case-layout,
+  .early-case,
+  .demo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+
+  .control-panel {
+    position: static;
+  }
+
+  h1 {
+    font-size: 44px;
+  }
+
+  .step-grid,
+  .variable-grid,
+  .result-grid,
+  .summary-grid,
+  .resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    width: min(100% - 28px, 1160px);
+    padding: 54px 0;
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+
+  h2 {
+    font-size: 28px;
+  }
+
+  .hero-metrics,
+  .step-grid,
+  .comparison-grid,
+  .variable-grid,
+  .result-grid,
+  .summary-grid,
+  .resource-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual,
+  .chart-panel {
+    padding: 14px;
+  }
+
+  .chart-header {
+    display: block;
+  }
+
+  .chart-tools {
+    justify-items: start;
+    margin-top: 14px;
+  }
+
+  .time-panel-head,
+  .insight-grid,
+  .year-stats,
+  .composition-list {
+    grid-template-columns: 1fr;
+  }
+
+  .time-panel-head {
+    display: block;
+  }
+
+  .time-panel-head p {
+    margin-top: 6px;
+    text-align: left;
+  }
+
+  .input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .legend {
+    margin-top: 14px;
+  }
+
+  th,
+  td {
+    padding: 13px 14px;
+  }
+}
+
+    </style>
+    <script>
+const defaultScenario = {
+  principal: 10000,
+  annualRate: 0.08,
+  years: 40,
+  annualContribution: 0,
+  frequency: 1,
+};
+
+const state = {
+  ...defaultScenario,
+  selectedYear: defaultScenario.years,
+  viewMode: "both",
+};
+
+const currencyFormatter = new Intl.NumberFormat("zh-CN", {
+  style: "currency",
+  currency: "CNY",
+  maximumFractionDigits: 0,
+});
+
+const percentFormatter = new Intl.NumberFormat("zh-CN", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
+
+const frequencyLabels = {
+  1: "按年复利",
+  4: "按季度复利",
+  12: "按月复利",
+};
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function compoundGrow(value, annualRate, frequency) {
+  return value * Math.pow(1 + annualRate / frequency, frequency);
+}
+
+function simpleValueWithContributions(principal, annualRate, annualContribution, year) {
+  let value = principal * (1 + annualRate * year);
+
+  for (let contributionYear = 1; contributionYear <= year; contributionYear += 1) {
+    value += annualContribution * (1 + annualRate * (year - contributionYear));
+  }
+
+  return value;
+}
+
+function createAnnualData({ principal, annualRate, years, annualContribution, frequency }) {
+  const data = [];
+  let compound = principal;
+  let invested = principal;
+
+  for (let year = 0; year <= years; year += 1) {
+    if (year > 0) {
+      compound = compoundGrow(compound, annualRate, frequency) + annualContribution;
+      invested += annualContribution;
+    }
+
+    const simple = simpleValueWithContributions(principal, annualRate, annualContribution, year);
+
+    data.push({
+      year,
+      compound,
+      simple,
+      invested,
+      principal,
+      addedContributions: invested - principal,
+      compoundGain: compound - invested,
+      simpleGain: simple - invested,
+    });
+  }
+
+  return data;
+}
+
+function formatCurrency(value) {
+  return currencyFormatter.format(Math.round(value));
+}
+
+function formatAxisCurrency(value) {
+  if (value >= 100000000) {
+    return `${Math.round(value / 100000000)} 亿`;
+  }
+
+  if (value >= 10000) {
+    return `${Math.round(value / 10000)} 万`;
+  }
+
+  return `${Math.round(value)}`;
+}
+
+function getMilestoneYears(years) {
+  const candidates = [0, 10, 20, 30, 40, 50].filter((year) => year <= years);
+
+  if (!candidates.includes(years)) {
+    candidates.push(years);
+  }
+
+  return [...new Set(candidates)].sort((a, b) => a - b);
+}
+
+function getVisibleSeries(viewMode) {
+  if (viewMode === "compound") {
+    return [["compound", "chart-path chart-compound"]];
+  }
+
+  if (viewMode === "simple") {
+    return [["simple", "chart-path chart-simple"]];
+  }
+
+  return [
+    ["simple", "chart-path chart-simple"],
+    ["compound", "chart-path chart-compound"],
+  ];
+}
+
+function updateResultCards(data) {
+  const finalRow = data[data.length - 1];
+  const gainRatio = finalRow.compound > 0 ? finalRow.compoundGain / finalRow.compound : 0;
+
+  document.querySelector("#finalValue").textContent = formatCurrency(finalRow.compound);
+  document.querySelector("#totalInvested").textContent = formatCurrency(finalRow.invested);
+  document.querySelector("#compoundGain").textContent = formatCurrency(finalRow.compoundGain);
+  document.querySelector("#gainRatio").textContent = percentFormatter.format(gainRatio);
+}
+
+function updateMilestoneTable(data) {
+  const years = data[data.length - 1].year;
+  const rows = getMilestoneYears(years)
+    .map((year) => {
+      const row = data[year];
+      return `
+        <tr>
+          <td>第 ${year} 年</td>
+          <td>${formatCurrency(row.compound)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  document.querySelector("#milestoneRows").innerHTML = rows;
+}
+
+function updateTimePanel(data) {
+  const year = clamp(state.selectedYear, 0, state.years);
+  const row = data[year];
+
+  document.querySelector("#currentYearLabel").textContent = String(year);
+  document.querySelector("#currentYearSummary").textContent =
+    `${frequencyLabels[state.frequency]}，累计收益 ${formatCurrency(row.compoundGain)}`;
+  document.querySelector("#currentCompound").textContent = formatCurrency(row.compound);
+  document.querySelector("#currentInvested").textContent = formatCurrency(row.invested);
+  document.querySelector("#currentGain").textContent = formatCurrency(row.compoundGain);
+
+  const yearRange = document.querySelector("#yearRange");
+  yearRange.max = String(state.years);
+  yearRange.value = String(year);
+}
+
+function updateComposition(data) {
+  const finalRow = data[data.length - 1];
+  const total = Math.max(finalRow.compound, 1);
+  const principalWidth = (finalRow.principal / total) * 100;
+  const contributionWidth = (finalRow.addedContributions / total) * 100;
+  const gainWidth = Math.max(0, (finalRow.compoundGain / total) * 100);
+
+  document.querySelector("#principalSegment").style.width = `${principalWidth}%`;
+  document.querySelector("#contributionSegment").style.width = `${contributionWidth}%`;
+  document.querySelector("#gainSegment").style.width = `${gainWidth}%`;
+  document.querySelector("#principalPart").textContent = formatCurrency(finalRow.principal);
+  document.querySelector("#contributionPart").textContent = formatCurrency(finalRow.addedContributions);
+  document.querySelector("#gainPart").textContent = formatCurrency(finalRow.compoundGain);
+}
+
+function findFirstYear(data, predicate) {
+  const row = data.find(predicate);
+  return row ? `第 ${row.year} 年` : "未达到";
+}
+
+function updateKeyNodes(data) {
+  const finalRow = data[data.length - 1];
+  const doubleTarget = finalRow.principal * 2;
+  const tenYearsAgo = data[Math.max(0, finalRow.year - 10)];
+  const lastDecadeGain = finalRow.compound - tenYearsAgo.compound;
+
+  document.querySelector("#doubleYear").textContent = findFirstYear(
+    data,
+    (row) => row.compound >= doubleTarget,
+  );
+  document.querySelector("#gainOverPrincipalYear").textContent = findFirstYear(
+    data,
+    (row) => row.compoundGain >= row.principal,
+  );
+  document.querySelector("#lastDecadeGain").textContent = formatCurrency(lastDecadeGain);
+}
+
+function updateRiskNote() {
+  const riskNote = document.querySelector("#riskNote");
+  riskNote.hidden = state.annualRate < 0.15;
+}
+
+function createSvgElement(tag, attributes = {}) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+
+  return element;
+}
+
+function createLinePath(data, getX, getY, valueKey) {
+  return data
+    .map((item, index) => {
+      const command = index === 0 ? "M" : "L";
+      return `${command}${getX(item.year).toFixed(2)} ${getY(item[valueKey]).toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+function renderGrowthChart(data) {
+  const svg = document.querySelector("#growthChart");
+  const tooltip = document.querySelector("#chartTooltip");
+  const width = 900;
+  const height = 420;
+  const margin = { top: 28, right: 26, bottom: 52, left: 76 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const maxYear = Math.max(1, data[data.length - 1].year);
+  const visibleSeries = getVisibleSeries(state.viewMode);
+  const values = data.flatMap((item) => [
+    item.invested,
+    ...visibleSeries.map(([key]) => item[key]),
+  ]);
+  const maxValue = Math.max(...values, 1) * 1.08;
+
+  svg.replaceChildren();
+
+  const getX = (year) => margin.left + (year / maxYear) * innerWidth;
+  const getY = (value) => margin.top + innerHeight - (value / maxValue) * innerHeight;
+
+  const yTicks = 5;
+  for (let index = 0; index <= yTicks; index += 1) {
+    const value = (maxValue / yTicks) * index;
+    const y = getY(value);
+
+    svg.appendChild(
+      createSvgElement("line", {
+        x1: margin.left,
+        x2: width - margin.right,
+        y1: y,
+        y2: y,
+        class: "chart-grid",
+      }),
+    );
+
+    svg.appendChild(
+      createSvgElement("text", {
+        x: margin.left - 14,
+        y: y + 4,
+        "text-anchor": "end",
+        class: "chart-label",
+      }),
+    ).textContent = formatAxisCurrency(value);
+  }
+
+  getMilestoneYears(maxYear).forEach((year) => {
+    const x = getX(year);
+
+    svg.appendChild(
+      createSvgElement("line", {
+        x1: x,
+        x2: x,
+        y1: margin.top,
+        y2: height - margin.bottom,
+        class: "chart-grid",
+      }),
+    );
+
+    svg.appendChild(
+      createSvgElement("text", {
+        x,
+        y: height - margin.bottom + 30,
+        "text-anchor": "middle",
+        class: "chart-label",
+      }),
+    ).textContent = `${year} 年`;
+  });
+
+  svg.appendChild(
+    createSvgElement("line", {
+      x1: margin.left,
+      x2: width - margin.right,
+      y1: height - margin.bottom,
+      y2: height - margin.bottom,
+      class: "chart-axis",
+    }),
+  );
+
+  svg.appendChild(
+    createSvgElement("line", {
+      x1: margin.left,
+      x2: margin.left,
+      y1: margin.top,
+      y2: height - margin.bottom,
+      class: "chart-axis",
+    }),
+  );
+
+  svg.appendChild(
+    createSvgElement("path", {
+      d: createLinePath(data, getX, getY, "invested"),
+      class: "chart-path chart-invested",
+    }),
+  );
+
+  visibleSeries.forEach(([key, className]) => {
+    svg.appendChild(
+      createSvgElement("path", {
+        d: createLinePath(data, getX, getY, key),
+        class: className,
+      }),
+    );
+  });
+
+  const selectedRow = data[state.selectedYear];
+  const selectedX = getX(selectedRow.year);
+  const selectedKey = state.viewMode === "simple" ? "simple" : "compound";
+
+  svg.appendChild(
+    createSvgElement("line", {
+      x1: selectedX,
+      x2: selectedX,
+      y1: margin.top,
+      y2: height - margin.bottom,
+      class: "chart-selected-line",
+    }),
+  );
+
+  svg.appendChild(
+    createSvgElement("circle", {
+      cx: selectedX,
+      cy: getY(selectedRow[selectedKey]),
+      r: 7,
+      class: "chart-selected-dot",
+    }),
+  );
+
+  const hoverGroup = createSvgElement("g", { opacity: "0" });
+  const hoverLine = createSvgElement("line", {
+    y1: margin.top,
+    y2: height - margin.bottom,
+    class: "chart-hover-line",
+  });
+  const compoundMarker = createSvgElement("circle", {
+    r: 6,
+    class: "chart-marker",
+    stroke: "var(--green)",
+  });
+  const simpleMarker = createSvgElement("circle", {
+    r: 5,
+    class: "chart-marker",
+    stroke: "var(--teal)",
+  });
+
+  hoverGroup.append(hoverLine, simpleMarker, compoundMarker);
+  svg.appendChild(hoverGroup);
+
+  const overlay = createSvgElement("rect", {
+    x: margin.left,
+    y: margin.top,
+    width: innerWidth,
+    height: innerHeight,
+    fill: "transparent",
+  });
+
+  function updateHover(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = width / rect.width;
+    const x = (clientX - rect.left) * scaleX;
+    const clampedX = Math.max(margin.left, Math.min(width - margin.right, x));
+    const year = Math.round(((clampedX - margin.left) / innerWidth) * maxYear);
+    const row = data[year];
+    const markerX = getX(row.year);
+
+    hoverGroup.setAttribute("opacity", "1");
+    hoverLine.setAttribute("x1", markerX);
+    hoverLine.setAttribute("x2", markerX);
+    compoundMarker.setAttribute("cx", markerX);
+    compoundMarker.setAttribute("cy", getY(row.compound));
+    simpleMarker.setAttribute("cx", markerX);
+    simpleMarker.setAttribute("cy", getY(row.simple));
+    compoundMarker.setAttribute(
+      "opacity",
+      state.viewMode === "simple" ? "0" : "1",
+    );
+    simpleMarker.setAttribute(
+      "opacity",
+      state.viewMode === "compound" ? "0" : "1",
+    );
+
+    const detailLines = [
+      state.viewMode !== "simple" ? `<span>复利：${formatCurrency(row.compound)}</span>` : "",
+      state.viewMode !== "compound" ? `<span>单利：${formatCurrency(row.simple)}</span>` : "",
+      `<span>总投入：${formatCurrency(row.invested)}</span>`,
+      `<span>累计收益：${formatCurrency(row.compoundGain)}</span>`,
+    ].join("");
+
+    tooltip.hidden = false;
+    tooltip.innerHTML = `<strong>第 ${row.year} 年</strong>${detailLines}`;
+
+    const tooltipX = (markerX / width) * rect.width;
+    const tooltipY = ((Math.min(getY(row.compound), getY(row.simple)) - 8) / height) * rect.height;
+    const nextLeft = Math.min(rect.width - 218, Math.max(8, tooltipX + 14));
+    const nextTop = Math.min(rect.height - 130, Math.max(8, tooltipY));
+
+    tooltip.style.left = `${nextLeft}px`;
+    tooltip.style.top = `${nextTop}px`;
+  }
+
+  overlay.addEventListener("pointermove", (event) => {
+    updateHover(event.clientX);
+  });
+
+  overlay.addEventListener("pointerleave", () => {
+    hoverGroup.setAttribute("opacity", "0");
+    tooltip.hidden = true;
+  });
+
+  svg.appendChild(overlay);
+}
+
+function readControlValue(inputId, fallback) {
+  const value = Number(document.querySelector(inputId).value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function syncControlPair(rangeId, inputId, value) {
+  document.querySelector(rangeId).value = String(value);
+  document.querySelector(inputId).value = String(value);
+}
+
+function readStateFromControls() {
+  const principal = clamp(readControlValue("#principalInput", defaultScenario.principal), 1000, 1000000);
+  const annualRatePercent = clamp(readControlValue("#rateInput", defaultScenario.annualRate * 100), 0, 30);
+  const years = clamp(Math.round(readControlValue("#yearsInput", defaultScenario.years)), 1, 50);
+  const annualContribution = clamp(
+    readControlValue("#contributionInput", defaultScenario.annualContribution),
+    0,
+    200000,
+  );
+  const frequency = Number(document.querySelector("#frequencyInput").value);
+
+  state.principal = principal;
+  state.annualRate = annualRatePercent / 100;
+  state.years = years;
+  state.annualContribution = annualContribution;
+  state.frequency = frequency;
+  state.selectedYear = clamp(state.selectedYear, 0, years);
+
+  syncControlPair("#principalRange", "#principalInput", principal);
+  syncControlPair("#rateRange", "#rateInput", annualRatePercent);
+  syncControlPair("#yearsRange", "#yearsInput", years);
+  syncControlPair("#contributionRange", "#contributionInput", annualContribution);
+}
+
+function updatePresetState() {
+  document.querySelectorAll(".preset-button").forEach((button) => {
+    const rate = Number(button.dataset.rate);
+    button.classList.toggle("is-active", Math.abs(rate - state.annualRate) < 0.0001);
+  });
+}
+
+function render() {
+  const annualData = createAnnualData(state);
+
+  updateResultCards(annualData);
+  updateMilestoneTable(annualData);
+  updateTimePanel(annualData);
+  updateComposition(annualData);
+  updateKeyNodes(annualData);
+  updatePresetState();
+  updateRiskNote();
+  renderGrowthChart(annualData);
+}
+
+function handleControlInput(event) {
+  const pairs = {
+    principalRange: "principalInput",
+    principalInput: "principalRange",
+    rateRange: "rateInput",
+    rateInput: "rateRange",
+    yearsRange: "yearsInput",
+    yearsInput: "yearsRange",
+    contributionRange: "contributionInput",
+    contributionInput: "contributionRange",
+  };
+
+  const targetId = event.target.id;
+  if (pairs[targetId]) {
+    document.querySelector(`#${pairs[targetId]}`).value = event.target.value;
+  }
+
+  const yearsChanged = targetId === "yearsRange" || targetId === "yearsInput";
+  readStateFromControls();
+  if (yearsChanged) {
+    state.selectedYear = state.years;
+  }
+  render();
+}
+
+function bindControls() {
+  [
+    "#principalRange",
+    "#principalInput",
+    "#rateRange",
+    "#rateInput",
+    "#yearsRange",
+    "#yearsInput",
+    "#contributionRange",
+    "#contributionInput",
+    "#frequencyInput",
+  ].forEach((selector) => {
+    document.querySelector(selector).addEventListener("input", handleControlInput);
+  });
+
+  document.querySelector("#yearRange").addEventListener("input", (event) => {
+    state.selectedYear = Number(event.target.value);
+    render();
+  });
+
+  document.querySelectorAll("input[name='viewMode']").forEach((input) => {
+    input.addEventListener("change", (event) => {
+      state.viewMode = event.target.value;
+      render();
+    });
+  });
+
+  document.querySelectorAll(".preset-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const ratePercent = Number(button.dataset.rate) * 100;
+      syncControlPair("#rateRange", "#rateInput", ratePercent);
+      readStateFromControls();
+      render();
+    });
+  });
+}
+
+function init() {
+  bindControls();
+  readStateFromControls();
+  state.selectedYear = state.years;
+  render();
+}
+
+window.addEventListener("DOMContentLoaded", init);
+
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#hero" aria-label="回到页面顶部">
+        <span class="brand-mark" aria-hidden="true"></span>
+        复利学习
+      </a>
+      <nav class="site-nav" aria-label="页面章节">
+        <a href="#definition">概念</a>
+        <a href="#formula">公式</a>
+        <a href="#comparison">对比</a>
+        <a href="#case-study">案例</a>
+        <a href="#demo">图表</a>
+        <a href="#resources">资料</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero section" id="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Compound Interest</p>
+          <h1>复利：让增长自己产生增长</h1>
+          <p class="hero-copy">
+            从本金、收益率和时间三个角度，看懂为什么长期积累会呈现加速增长。
+          </p>
+          <div class="hero-metrics" aria-label="复利核心要素">
+            <div>
+              <span>本金</span>
+              <strong>增长的起点</strong>
+            </div>
+            <div>
+              <span>收益率</span>
+              <strong>增长的速度</strong>
+            </div>
+            <div>
+              <span>时间</span>
+              <strong>放大的尺度</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="复利增长示意图">
+          <svg viewBox="0 0 560 340" role="img" aria-labelledby="hero-chart-title">
+            <title id="hero-chart-title">金额随时间加速增长的曲线</title>
+            <g class="hero-grid">
+              <line x1="52" y1="286" x2="520" y2="286"></line>
+              <line x1="52" y1="226" x2="520" y2="226"></line>
+              <line x1="52" y1="166" x2="520" y2="166"></line>
+              <line x1="52" y1="106" x2="520" y2="106"></line>
+            </g>
+            <path
+              class="hero-invested"
+              d="M52 286 C156 280 260 276 364 272 C426 270 474 268 520 266"
+            ></path>
+            <path
+              class="hero-curve"
+              d="M52 286 C148 276 210 258 276 228 C354 192 424 132 520 48"
+            ></path>
+            <g class="hero-points">
+              <circle cx="52" cy="286" r="5"></circle>
+              <circle cx="276" cy="228" r="5"></circle>
+              <circle cx="520" cy="48" r="5"></circle>
+            </g>
+            <text x="52" y="314">第 0 年</text>
+            <text x="248" y="314">中期</text>
+            <text x="480" y="314">长期</text>
+          </svg>
+        </div>
+      </section>
+
+      <section class="section intro-band" id="definition">
+        <div class="section-heading">
+          <p class="eyebrow">Definition</p>
+          <h2>什么是复利</h2>
+          <p>
+            复利是指每一期产生的收益不被取出，而是继续加入本金，在下一期一起产生新的收益。
+            它的关键不是“利率很高”，而是“收益也开始参与下一轮增长”。
+          </p>
+        </div>
+
+        <div class="step-grid" aria-label="复利三步理解">
+          <article class="step-card">
+            <span>01</span>
+            <h3>本金产生收益</h3>
+            <p>初始本金 10,000 元，年收益率 8%，第 1 年末为 10,800 元。</p>
+          </article>
+          <article class="step-card">
+            <span>02</span>
+            <h3>收益加入本金</h3>
+            <p>第 2 年不再只按 10,000 元计算，而是按 10,800 元继续增长。</p>
+          </article>
+          <article class="step-card">
+            <span>03</span>
+            <h3>增长基础扩大</h3>
+            <p>时间越长，收益产生收益的效果越明显，曲线开始变陡。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section formula-layout" id="formula">
+        <div class="section-heading">
+          <p class="eyebrow">Formula</p>
+          <h2>复利公式拆解</h2>
+          <p>最常见的一次性投入复利公式如下。页面中的默认案例也基于这组变量计算。</p>
+        </div>
+
+        <div class="formula-panel">
+          <div class="formula-box" aria-label="复利公式">FV = PV × (1 + r)<sup>n</sup></div>
+          <div class="formula-box secondary" aria-label="多次复利公式">
+            FV = PV × (1 + r / m)<sup>m × t</sup>
+          </div>
+        </div>
+
+        <div class="variable-grid">
+          <article>
+            <strong>FV</strong>
+            <span>未来价值</span>
+            <p>经过若干期复利增长后的最终金额。</p>
+          </article>
+          <article>
+            <strong>PV</strong>
+            <span>现值 / 本金</span>
+            <p>初始投入金额，是所有增长的起点。</p>
+          </article>
+          <article>
+            <strong>r</strong>
+            <span>每期收益率</span>
+            <p>每一期的增长比例，例如年化 8% 写作 0.08。</p>
+          </article>
+          <article>
+            <strong>n</strong>
+            <span>期数</span>
+            <p>参与复利增长的周期数量，例如 10 年、20 年。</p>
+          </article>
+          <article>
+            <strong>m</strong>
+            <span>每年复利次数</span>
+            <p>例如按年、按季度或按月复利。</p>
+          </article>
+          <article>
+            <strong>t</strong>
+            <span>年数</span>
+            <p>总投资或增长时间。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section comparison-section" id="comparison">
+        <div class="section-heading">
+          <p class="eyebrow">Simple vs Compound</p>
+          <h2>单利与复利的区别</h2>
+          <p>短期看，两者差距不一定明显；时间拉长后，复利曲线会逐渐离开单利直线。</p>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="comparison-card">
+            <h3>单利</h3>
+            <div class="mini-formula">FV = PV × (1 + r × n)</div>
+            <p>收益始终只按初始本金计算，增长形态更接近直线。</p>
+          </article>
+          <article class="comparison-card accent">
+            <h3>复利</h3>
+            <div class="mini-formula">FV = PV × (1 + r)<sup>n</sup></div>
+            <p>收益会加入本金继续增长，长期结果呈现加速曲线。</p>
+          </article>
+        </div>
+
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>对比项</th>
+                <th>单利</th>
+                <th>复利</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>收益计算基础</td>
+                <td>始终基于初始本金</td>
+                <td>基于本金与已产生收益</td>
+              </tr>
+              <tr>
+                <td>增长形态</td>
+                <td>线性增长</td>
+                <td>曲线增长</td>
+              </tr>
+              <tr>
+                <td>时间越长</td>
+                <td>增长稳定但有限</td>
+                <td>增长加速，差距扩大</td>
+              </tr>
+              <tr>
+                <td>适合理解</td>
+                <td>固定利息、简单借贷</td>
+                <td>长期投资、资产积累</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section case-section" id="case-study">
+        <div class="section-heading">
+          <p class="eyebrow">Case Study</p>
+          <h2>长期案例：10,000 元以 8% 年化增长 40 年</h2>
+          <p>
+            下方使用固定收益率做教育演示。现实投资收益会波动，示例结果不代表任何收益承诺。
+          </p>
+        </div>
+
+        <div class="case-layout">
+          <div class="case-copy">
+            <h3>前期慢，后期快</h3>
+            <p>
+              复利的直觉经常反过来：最初几年变化并不夸张，真正明显的增长通常出现在后半段。
+              这也是理解复利时必须把时间拉长的原因。
+            </p>
+            <ul class="check-list">
+              <li>第 10 年金额约为初始本金的 2.16 倍。</li>
+              <li>第 30 年金额约为 100,627 元。</li>
+              <li>第 40 年金额约为 217,245 元，后 10 年增长非常明显。</li>
+            </ul>
+          </div>
+
+          <div class="case-table-wrap">
+            <table class="case-table" aria-label="40 年复利案例关键年份">
+              <thead>
+                <tr>
+                  <th>年数</th>
+                  <th>复利金额</th>
+                </tr>
+              </thead>
+              <tbody id="milestoneRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="early-case">
+          <div>
+            <p class="eyebrow">Start Earlier</p>
+            <h3>早开始 vs 晚开始</h3>
+            <p>
+              这个案例比较 25 岁开始投入少量资金，和 35 岁开始投入更多资金，在 65 岁时的差异。
+              它强调复利中的一个重要变量：钱参与增长的时间。
+            </p>
+          </div>
+          <div class="comparison-table-wrap">
+            <table class="comparison-table" aria-label="早开始与晚开始投资案例结构">
+              <thead>
+                <tr>
+                  <th>用户</th>
+                  <th>开始年龄</th>
+                  <th>每年投入</th>
+                  <th>年化收益率</th>
+                  <th>查看年龄</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>A</td>
+                  <td>25 岁</td>
+                  <td>10,000 元</td>
+                  <td>8%</td>
+                  <td>65 岁</td>
+                </tr>
+                <tr>
+                  <td>B</td>
+                  <td>35 岁</td>
+                  <td>10,000 元</td>
+                  <td>8%</td>
+                  <td>65 岁</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section demo-section" id="demo">
+        <div class="section-heading">
+          <p class="eyebrow">Calculated Demo</p>
+          <h2>交互式复利计算器</h2>
+          <p>
+            本模块把本金、收益率、时间、追加投入和复利频率转化为同一组年度数据，用于对比不同增长假设下的长期结果。
+          </p>
+        </div>
+
+        <div class="demo-layout">
+          <aside class="control-panel" aria-label="复利计算器参数">
+            <div class="preset-group" aria-label="参数预设">
+              <button class="preset-button" type="button" data-rate="0.03">保守 3%</button>
+              <button class="preset-button" type="button" data-rate="0.06">稳健 6%</button>
+              <button class="preset-button is-active" type="button" data-rate="0.08">默认 8%</button>
+              <button class="preset-button" type="button" data-rate="0.1">积极 10%</button>
+              <button class="preset-button danger" type="button" data-rate="0.18">高利 18%</button>
+            </div>
+
+            <div class="field-group">
+              <label for="principalInput">初始本金</label>
+              <div class="input-row">
+                <input id="principalRange" type="range" min="1000" max="1000000" step="1000" value="10000">
+                <input id="principalInput" type="number" min="1000" max="1000000" step="1000" value="10000">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="rateInput">年化收益率</label>
+              <div class="input-row">
+                <input id="rateRange" type="range" min="0" max="30" step="0.1" value="8">
+                <input id="rateInput" type="number" min="0" max="30" step="0.1" value="8">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="yearsInput">投资年限</label>
+              <div class="input-row">
+                <input id="yearsRange" type="range" min="1" max="50" step="1" value="40">
+                <input id="yearsInput" type="number" min="1" max="50" step="1" value="40">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="contributionInput">每年追加投入</label>
+              <div class="input-row">
+                <input id="contributionRange" type="range" min="0" max="200000" step="1000" value="0">
+                <input id="contributionInput" type="number" min="0" max="200000" step="1000" value="0">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="frequencyInput">复利频率</label>
+              <select id="frequencyInput">
+                <option value="1">按年复利</option>
+                <option value="4">按季度复利</option>
+                <option value="12">按月复利</option>
+              </select>
+            </div>
+
+            <p class="assumption-note">
+              假设收益率固定、收益全部再投入，且追加投入发生在每年末。本页面仅用于学习演示。
+            </p>
+          </aside>
+
+          <div class="demo-main">
+            <div class="result-grid" aria-label="当前参数计算结果">
+              <article>
+                <span>最终金额</span>
+                <strong id="finalValue">--</strong>
+              </article>
+              <article>
+                <span>总投入</span>
+                <strong id="totalInvested">--</strong>
+              </article>
+              <article>
+                <span>复利收益</span>
+                <strong id="compoundGain">--</strong>
+              </article>
+              <article>
+                <span>收益占比</span>
+                <strong id="gainRatio">--</strong>
+              </article>
+            </div>
+
+            <div class="chart-panel">
+              <div class="chart-header">
+                <div>
+                  <h3>单利 vs 复利</h3>
+                  <p>同一组参数下，单利、复利与总投入会形成不同的年度轨迹。</p>
+                </div>
+                <div class="chart-tools">
+                  <div class="view-toggle" aria-label="曲线显示模式">
+                    <label>
+                      <input type="radio" name="viewMode" value="both" checked>
+                      双线
+                    </label>
+                    <label>
+                      <input type="radio" name="viewMode" value="compound">
+                      复利
+                    </label>
+                    <label>
+                      <input type="radio" name="viewMode" value="simple">
+                      单利
+                    </label>
+                  </div>
+                  <div class="legend" aria-label="图表图例">
+                    <span class="legend-compound">复利</span>
+                    <span class="legend-simple">单利</span>
+                    <span class="legend-invested">总投入</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-wrap">
+                <svg id="growthChart" viewBox="0 0 900 420" role="img" aria-label="复利、单利与总投入增长曲线"></svg>
+                <div id="chartTooltip" class="chart-tooltip" hidden></div>
+              </div>
+            </div>
+
+            <div class="time-panel" aria-label="时间维度查看">
+              <div class="time-panel-head">
+                <h3>第 <span id="currentYearLabel">40</span> 年</h3>
+                <p id="currentYearSummary">--</p>
+              </div>
+              <input id="yearRange" type="range" min="0" max="40" step="1" value="40">
+              <div class="year-stats">
+                <span>当前复利金额 <strong id="currentCompound">--</strong></span>
+                <span>累计投入 <strong id="currentInvested">--</strong></span>
+                <span>累计收益 <strong id="currentGain">--</strong></span>
+              </div>
+            </div>
+
+            <div class="insight-grid">
+              <article class="composition-card">
+                <h3>金额组成</h3>
+                <div class="composition-bar" aria-label="最终金额组成">
+                  <span id="principalSegment" class="principal-segment"></span>
+                  <span id="contributionSegment" class="contribution-segment"></span>
+                  <span id="gainSegment" class="gain-segment"></span>
+                </div>
+                <div class="composition-list">
+                  <span><i class="principal-dot"></i>初始本金 <strong id="principalPart">--</strong></span>
+                  <span><i class="contribution-dot"></i>追加投入 <strong id="contributionPart">--</strong></span>
+                  <span><i class="gain-dot"></i>复利收益 <strong id="gainPart">--</strong></span>
+                </div>
+              </article>
+
+              <article class="key-node-card">
+                <h3>关键节点</h3>
+                <dl>
+                  <div>
+                    <dt>本金翻倍</dt>
+                    <dd id="doubleYear">--</dd>
+                  </div>
+                  <div>
+                    <dt>收益超过本金</dt>
+                    <dd id="gainOverPrincipalYear">--</dd>
+                  </div>
+                  <div>
+                    <dt>最后 10 年新增</dt>
+                    <dd id="lastDecadeGain">--</dd>
+                  </div>
+                </dl>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div id="riskNote" class="risk-note" hidden>
+          高利率同样会让债务快速扩大。若这是借款或信用卡成本，复利会放大还款压力。
+        </div>
+      </section>
+
+      <section class="section resources-section" id="resources">
+        <div class="section-heading">
+          <p class="eyebrow">References</p>
+          <h2>经典案例与资料方向</h2>
+          <p>
+            这些内容用于扩展理解复利的现实语境。涉及投资人物、历史案例或市场数据时，应核实来源，并区分教育示例与投资建议。
+          </p>
+        </div>
+
+        <div class="resource-grid">
+          <article>
+            <h3>长期投资故事</h3>
+            <p>比较早开始、晚开始和持续投入的长期差异，适合与页面中的时间滑块联动理解。</p>
+          </article>
+          <article>
+            <h3>一分钱翻倍</h3>
+            <p>用短周期翻倍故事说明指数增长，但需要提醒它是数学示例而非现实收益。</p>
+          </article>
+          <article>
+            <h3>高利债务案例</h3>
+            <p>用信用卡或贷款利率解释复利也会放大负债成本，对应计算器中的高利预设。</p>
+          </article>
+          <article>
+            <h3>谨慎引用名言</h3>
+            <p>复利相关名言应核实出处；来源不确定时使用“常被引用的说法”。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section summary-section" id="summary">
+        <div class="section-heading">
+          <p class="eyebrow">Summary</p>
+          <h2>学习总结</h2>
+        </div>
+        <div class="summary-grid">
+          <article>
+            <strong>01</strong>
+            <p>复利的本质是收益继续产生收益。</p>
+          </article>
+          <article>
+            <strong>02</strong>
+            <p>收益率重要，但时间同样重要，长期中尤其关键。</p>
+          </article>
+          <article>
+            <strong>03</strong>
+            <p>复利增长不是匀速的，越到后期增长越明显。</p>
+          </article>
+          <article>
+            <strong>04</strong>
+            <p>复利既可以放大资产积累，也可以放大债务成本。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
