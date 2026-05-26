@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>苏州 K12 教培行业市场格局调研报告（2021–2026）</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #1e3a5f;
+    --accent-light: #2c5282;
+    --border: #e2e8f0;
+    --gold: #b8860b;
+    --green: #2e7d32;
+    --red: #c62828;
+    --blue-light: #e8f0fe;
+    --yellow-light: #fff8e1;
+    --table-stripe: #f7fafc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    padding: 0;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+    padding: 60px 40px;
+    text-align: center;
+  }
+  .header h1 { font-size: 2.2em; margin-bottom: 10px; letter-spacing: 2px; }
+  .header .subtitle { font-size: 1.1em; opacity: 0.8; }
+  .header .meta { margin-top: 20px; font-size: 0.9em; opacity: 0.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+  .card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 1.5em;
+    color: var(--accent);
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  h3 { font-size: 1.2em; color: var(--accent-light); margin: 24px 0 12px; }
+  h4 { font-size: 1.05em; margin: 16px 0 8px; color: #333; }
+  p { margin-bottom: 12px; }
+  blockquote {
+    background: var(--yellow-light);
+    border-left: 4px solid #f9a825;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.95em;
+  }
+  .exec-summary {
+    background: var(--blue-light);
+    border-left: 4px solid var(--accent-light);
+    padding: 20px 24px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 24px;
+  }
+  .exec-summary ol { margin-left: 20px; }
+  .exec-summary li { margin-bottom: 6px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+  }
+  th {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  tr:hover td { background: #e8f0fe; }
+  .score-5 { background: #e8f5e9; color: var(--green); font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+  .score-4 { background: #f1f8e9; color: #558b2f; font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+  .score-3 { background: #fff8e1; color: #f57f17; font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+  .score-2 { background: #fff3e0; color: #e65100; font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+  .rank-1 { color: var(--gold); font-weight: bold; font-size: 1.1em; }
+  .rank-2 { color: #666; font-weight: bold; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.82em;
+    font-weight: 600;
+    margin: 0 2px;
+  }
+  .badge-national { background: #e3f2fd; color: #1565c0; }
+  .badge-local { background: #fff3e0; color: #e65100; }
+  .badge-listed { background: #e8f5e9; color: #2e7d32; }
+  .badge-private { background: #fce4ec; color: #c62828; }
+  .conclusion-box {
+    background: linear-gradient(135deg, #e8f0fe, #f0f4ff);
+    border: 1px solid #c5d5f7;
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+  }
+  .limitations {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+  }
+  .limitations h3 { color: #e65100; }
+  .toc { line-height: 2.2; }
+  .toc a { color: var(--accent-light); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .footer {
+    text-align: center;
+    color: #999;
+    font-size: 0.85em;
+    padding: 40px 20px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .section-divider { border: none; border-top: 1px dashed var(--border); margin: 40px 0; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0; }
+  .kpi-card { background: var(--blue-light); border-radius: 8px; padding: 20px; text-align: center; }
+  .kpi-card .value { font-size: 1.8em; font-weight: bold; color: var(--accent); }
+  .kpi-card .label { font-size: 0.85em; color: var(--text-secondary); margin-top: 4px; }
+  .highlight { background: #ffeb3b33; padding: 1px 3px; border-radius: 2px; }
+  .source-tag { font-size: 0.78em; color: #888; font-style: italic; }
+  @media (max-width: 768px) {
+    .header { padding: 40px 20px; }
+    .header h1 { font-size: 1.5em; }
+    .card { padding: 20px; }
+    table { font-size: 0.8em; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>苏州 K12 教培行业市场格局调研报告</h1>
+  <div class="subtitle">覆盖周期：2021–2026 年 &nbsp;|&nbsp; 聚焦综合影响力、用户口碑、课程质量与服务能力</div>
+  <div class="meta">调研日期：2026 年 5 月 &nbsp;|&nbsp; 苏州 · 长三角</div>
+</div>
+
+<div class="container">
+
+<!-- 执行摘要 -->
+<div class="exec-summary">
+  <h2 style="border:none; margin-top:0; padding-bottom:4px;">📋 执行摘要</h2>
+  <p>苏州 K12 教培行业在 2021 年「双减」政策冲击后经历了深度洗牌，线下学科类培训机构数量全国性压减超 <strong>96%</strong>。进入 2023–2024 年，行业在监管框架明晰后逐步企稳复苏，合规龙头机构营收恢复增长，中小机构加速出清。</p>
+  <p><strong>核心发现：</strong></p>
+  <ol>
+    <li><strong>市场规模：</strong>苏州 K12 课外辅导市场年规模估计在 60–100 亿元区间，高中阶段学科培训仍是最大细分市场。</li>
+    <li><strong>竞争格局：</strong>全国性品牌（新东方、学大教育）与苏州本土品牌（腾大教育）形成双轨竞争，学而思因 K9 学科业务剥离在苏影响力有所减弱。</li>
+    <li><strong>综合最强机构：</strong>新东方苏州学校在综合影响力、品牌信任度和课程体系完整性方面排名居首；腾大教育在本土化服务和口碑方面表现突出，为苏州本地最强品牌。</li>
+    <li><strong>关键趋势：</strong>行业正从「规模型扩张」转向「质量型深耕」，科技赋能（AI 学习机、智能诊断）和本地化教研能力成为差异化竞争的核心。</li>
+  </ol>
+</div>
+
+<!-- 目录 -->
+<div class="card">
+  <h2>目录</h2>
+  <ol class="toc">
+    <li><a href="#s1">数据来源说明</a></li>
+    <li><a href="#s2">宏观背景：双减政策影响全景（2021–2026）</a></li>
+    <li><a href="#s3">苏州 K12 教培市场格局</a></li>
+    <li><a href="#s4">六维度评估框架</a></li>
+    <li><a href="#s5">机构对比分析</a></li>
+    <li><a href="#s6">综合排名</a></li>
+    <li><a href="#s7">结论与建议</a></li>
+    <li><a href="#s8">局限性声明</a></li>
+  </ol>
+</div>
+
+<!-- 一、数据来源 -->
+<div class="card" id="s1">
+  <h2>一、数据来源说明</h2>
+  <p>本报告数据来源包括以下三类，按可靠程度分级：</p>
+  <table>
+    <tr><th style="width:80px">可靠程度</th><th style="width:120px">来源类型</th><th>具体来源</th></tr>
+    <tr>
+      <td><span class="badge" style="background:#e8f5e9;color:#2e7d32;">高</span></td>
+      <td>上市公司法定披露</td>
+      <td>新东方（EDU/NYSE, 9901/HK）20-F 年报；好未来/TAL Education（TAL/NYSE）6-K/20-F；学大教育（000526.SZ）年度报告</td>
+    </tr>
+    <tr>
+      <td><span class="badge" style="background:#e8f5e9;color:#2e7d32;">高</span></td>
+      <td>政府官方数据</td>
+      <td>教育部「双减」政策文件；苏州市教育局官网公告；全国人大「双减」专项报告；苏州统计年鉴 2025</td>
+    </tr>
+    <tr>
+      <td><span class="badge" style="background:#fff8e1;color:#f57f17;">中</span></td>
+      <td>券商研报</td>
+      <td>光大证券、华鑫证券 K12 教培行业研究报告</td>
+    </tr>
+    <tr>
+      <td><span class="badge" style="background:#fff3e0;color:#e65100;">中–低</span></td>
+      <td>媒体/行业平台</td>
+      <td>微信公众号测评文章、企查查企业注销数据、地方媒体报道</td>
+    </tr>
+    <tr>
+      <td><span class="badge" style="background:#fce4ec;color:#c62828;">低</span></td>
+      <td>机构自宣材料</td>
+      <td>各机构官网、宣传文案中的续班率、提分率数据（未独立审计）</td>
+    </tr>
+  </table>
+  <blockquote>
+    <strong>重要提示：</strong>苏州本土非上市机构（如腾大教育、锐思教育）的财务和运营数据均来自行业媒体和机构自宣，未经第三方审计验证。
+  </blockquote>
+</div>
+
+<!-- 二、宏观背景 -->
+<div class="card" id="s2">
+  <h2>二、宏观背景：双减政策影响全景（2021–2026）</h2>
+
+  <h3>2.1 政策时间线</h3>
+  <table>
+    <tr><th>时间</th><th>关键事件</th><th>影响</th></tr>
+    <tr><td>2021.07</td><td>「双减」政策正式出台</td><td>K9 学科培训禁止上市、限制资本化，机构压减潮启动</td></tr>
+    <tr><td>2021 年底</td><td>线下机构压减 83.8%</td><td>全国近 <strong>7 万家</strong>教育企业吊销/注销</td></tr>
+    <tr><td>2022.10</td><td>全国人大报告：机构压减 96%</td><td>线下学科类机构从 <strong>12.4 万</strong> 降至 <strong>4,932</strong> 个</td></tr>
+    <tr><td>2022.12</td><td>十三部门发文：非学科培训是"有益补充"</td><td>政策拐点信号：素养类、高中阶段获政策空间</td></tr>
+    <tr><td>2024.02</td><td>《校外培训管理条例》征求意见稿</td><td>监管框架明晰，行业从「整顿」进入「规范发展」</td></tr>
+    <tr><td>2024–2025</td><td>各地白名单动态管理</td><td>苏州教育局持续通报违规机构查处</td></tr>
+  </table>
+
+  <h3>2.2 供给侧剧变（全国数据）</h3>
+  <table>
+    <tr><th>指标</th><th>双减前（2021 H1）</th><th>双减后（2022 年末）</th><th class="score-2">变化</th></tr>
+    <tr><td>线下学科类机构（义务教育）</td><td>12.4 万个</td><td>4,932 个</td><td class="score-2">−96.0%</td></tr>
+    <tr><td>线上学科类机构</td><td>263 个</td><td>34 个</td><td class="score-2">−87.1%</td></tr>
+    <tr><td>学科类市场规模</td><td>~3,947 亿元</td><td>~2,241 亿元（2024 估）</td><td class="score-2">−43.2%</td></tr>
+    <tr><td>教育企业注销</td><td>基准</td><td>+22.39 万家</td><td class="score-2">—</td></tr>
+  </table>
+
+  <h3>2.3 苏州本地政策环境</h3>
+  <p>苏州作为长三角核心城市，执行「双减」政策力度较大：2024–2025 年苏州市教育局多次通报违规学科培训查处情况；寒暑假前例行发布「校外培训温馨提示」；推行资金监管、预付费管理等配套措施。<span class="source-tag">来源：苏州市教育局官网 (jyj.suzhou.gov.cn)</span></p>
+</div>
+
+<!-- 三、苏州市场格局 -->
+<div class="card" id="s3">
+  <h2>三、苏州 K12 教培市场格局</h2>
+
+  <h3>3.1 需求侧基础</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="value">1,938</div><div class="label">各级各类学校（含幼儿园）</div></div>
+    <div class="kpi-card"><div class="value">~221 万</div><div class="label">在校学生总数</div></div>
+    <div class="kpi-card"><div class="value">~14.5 万</div><div class="label">2024 年小学招生人数</div></div>
+    <div class="kpi-card"><div class="value">→13 万</div><div class="label">2026 年中考人数预估</div></div>
+  </div>
+  <p><span class="source-tag">来源：苏州统计年鉴 2025、苏州市教育局 2024 年教育工作总结</span></p>
+  <p><strong>关键洞察：</strong>中考竞争持续加剧（中考人数攀升至约 13 万），高中阶段学科培训需求刚性；小学阶段需求则随出生人口下降趋于减少，但转向素养类培训。</p>
+
+  <h3>3.2 市场规模估算</h3>
+  <table>
+    <tr><th>细分市场</th><th>估算规模（苏州，2024）</th><th>推算逻辑</th></tr>
+    <tr><td>高中学科培训</td><td>30–50 亿元</td><td>苏州高中在校生约 18 万人，参培率 60%–80%，人均年消费 2–4 万</td></tr>
+    <tr><td>初中学科培训</td><td>15–25 亿元</td><td>受政策限制以非营利形式存在，但隐性需求量大</td></tr>
+    <tr><td>素养/非学科培训</td><td>15–25 亿元</td><td>编程、美术、科学等替代 K9 学科需求</td></tr>
+    <tr><th>合计</th><th>60–100 亿元</th><th>—</th></tr>
+  </table>
+  <blockquote>该估算基于公开信息交叉推算，非官方统计数据。行业自媒体引用"超百亿"说法可靠性较低。</blockquote>
+
+  <h3>3.3 核心竞争机构</h3>
+  <table>
+    <tr><th>机构</th><th>类型</th><th>苏州校区数</th><th>定位</th></tr>
+    <tr><td><strong>新东方苏州学校</strong> <span class="badge badge-national">全国品牌</span><span class="badge badge-listed">美股上市</span></td><td>全国品牌</td><td>12 家</td><td>综合学科+素养+出国留学</td></tr>
+    <tr><td><strong>苏州学而思培优</strong> <span class="badge badge-national">全国品牌</span><span class="badge badge-listed">美股上市</span></td><td>全国品牌</td><td>约 5–8 家（估算）</td><td>理科培优+素养</td></tr>
+    <tr><td><strong>苏州学大教育</strong> <span class="badge badge-national">全国品牌</span><span class="badge badge-listed">A股上市</span></td><td>全国品牌</td><td>12 家</td><td>个性化 1 对 1 辅导</td></tr>
+    <tr><td><strong>腾大教育</strong> <span class="badge badge-local">苏州本土</span><span class="badge badge-private">非上市</span></td><td>苏州本土</td><td>11 家</td><td>本土化全科辅导+理科竞赛</td></tr>
+    <tr><td><strong>锐思教育</strong> <span class="badge badge-local">地方品牌</span><span class="badge badge-private">非上市</span></td><td>地方品牌</td><td>少量（覆盖有限）</td><td>小班化精细管理</td></tr>
+  </table>
+</div>
+
+<!-- 四、评估框架 -->
+<div class="card" id="s4">
+  <h2>四、六维度评估框架</h2>
+  <p>评估采用 <strong>1–5 分制</strong>，5 分代表该维度行业领先水平。</p>
+  <table>
+    <tr><th>维度</th><th style="width:60px">权重</th><th>核心评估指标</th></tr>
+    <tr><td><strong>影响力</strong></td><td>25%</td><td>品牌知名度、校区数量、在读学生规模、媒体曝光、全国品牌势能</td></tr>
+    <tr><td><strong>口碑</strong></td><td>25%</td><td>续班率（头部>80%）、转介绍率、退费率、公开投诉量、社交媒体评价</td></tr>
+    <tr><td><strong>课程体系</strong></td><td>15%</td><td>课程完整度、苏州本地教材适配、教学闭环、科技应用（AI/大数据）</td></tr>
+    <tr><td><strong>师资</strong></td><td>15%</td><td>教师资质持证率、本地教龄、骨干教师占比、教师留存率</td></tr>
+    <tr><td><strong>服务</strong></td><td>10%</td><td>课前诊断、课中反馈、课后跟进、退费机制、资金监管合规</td></tr>
+    <tr><td><strong>价格</strong></td><td>10%</td><td>课时费水平、性价比、付费灵活性、资金安全（一课一消）</td></tr>
+  </table>
+</div>
+
+<!-- 五、机构对比 -->
+<div class="card" id="s5">
+  <h2>五、机构对比分析</h2>
+
+  <h3>5.1 新东方苏州学校 <span class="badge badge-national">全国品牌</span> <span class="badge badge-listed">美股 EDU</span></h3>
+  <table>
+    <tr><th>维度</th><th style="width:60px">评分</th><th>分析</th></tr>
+    <tr><td>影响力</td><td><span class="score-5">5.0</span></td><td>全国品牌第一梯队，母公司 FY2025 营收 $49 亿，1,025 家学习中心，苏州 12 校区</td></tr>
+    <tr><td>口碑</td><td><span class="score-4">4.0</span></td><td>品牌信任度高，英语学科传统优势；部分家长反映班级人数偏多、个性化不足</td></tr>
+    <tr><td>课程体系</td><td><span class="score-4">4.5</span></td><td>"6P 教学法""五位一体"体系，"四步三清"闭环，课程线丰富；部分苏教版适配不如本土</td></tr>
+    <tr><td>师资</td><td><span class="score-4">4.5</span></td><td>85% 教师为 985/211 硕士背景，系统化师训体系；全国调配导致苏州本地稳定性一般</td></tr>
+    <tr><td>服务</td><td><span class="score-3">3.5</span></td><td>标准化服务流程完整，需到店咨询，退费周期中等</td></tr>
+    <tr><td>价格</td><td><span class="score-3">3.5</span></td><td>一对一 250–400 元/节，班课中等偏上，品牌溢价明显</td></tr>
+    <tr style="font-weight:bold; background:#e8f0fe;"><td>综合加权</td><td>4.2/5.0</td><td>核心优势：品牌势能、课程多样性、全国教研资源</td></tr>
+  </table>
+
+  <h3>5.2 苏州学而思培优 <span class="badge badge-national">全国品牌</span> <span class="badge badge-listed">美股 TAL</span></h3>
+  <table>
+    <tr><th>维度</th><th style="width:60px">评分</th><th>分析</th></tr>
+    <tr><td>影响力</td><td><span class="score-4">4.0</span></td><td>好未来集团（FY2025 营收 ~$22.5 亿）旗下；理科培优品牌认知度高，但 K9 剥离后苏州校区缩减</td></tr>
+    <tr><td>口碑</td><td><span class="score-4">4.0</span></td><td>数学/物理培优口碑极强；因收缩线下校区导致部分区域服务断层</td></tr>
+    <tr><td>课程体系</td><td><span class="score-4">4.5</span></td><td>理科教学标准化行业领先，AI 学习机（周活 110 万）补充线上场景</td></tr>
+    <tr><td>师资</td><td><span class="score-4">4.0</span></td><td>清北等名校背景教师为主打，标准化培训体系，苏州本地经验弱于本土机构</td></tr>
+    <tr><td>服务</td><td><span class="score-3">3.5</span></td><td>数字化程度高（学情数据化），线下服务网点减少影响面对面体验</td></tr>
+    <tr><td>价格</td><td><span class="score-3">3.5</span></td><td>一对一 220–300 元/节，班课价格中等</td></tr>
+    <tr style="font-weight:bold; background:#e8f0fe;"><td>综合加权</td><td>3.9/5.0</td><td>核心优势：理科培优（不可替代的竞争壁垒）、科技赋能</td></tr>
+  </table>
+
+  <h3>5.3 苏州学大教育 <span class="badge badge-national">全国品牌</span> <span class="badge badge-listed">A股 000526</span></h3>
+  <table>
+    <tr><th>维度</th><th style="width:60px">评分</th><th>分析</th></tr>
+    <tr><td>影响力</td><td><span class="score-4">4.0</span></td><td>A 股上市，2024 年营收 27.86 亿元（+25.9%），全国 300+ 学习中心，苏州 12 校区</td></tr>
+    <tr><td>口碑</td><td><span class="score-3">3.5</span></td><td>1 对 1 个性化标签清晰；投诉集中在"频繁换老师"（~30% 家长）、退费慢、预付门槛高（30 节起 ~1 万）</td></tr>
+    <tr><td>课程体系</td><td><span class="score-3">3.5</span></td><td>"PPTS"智能测评系统差异化，"6 对 1"团队；效果依赖个体教师，一致性不足</td></tr>
+    <tr><td>师资</td><td><span class="score-3">3.5</span></td><td>60% 教师来自苏州本地，平均教龄 9 年；师资换得勤是痛点</td></tr>
+    <tr><td>服务</td><td><span class="score-3">3.5</span></td><td>6 对 1 覆盖全流程，支持上门辅导；退费需 7–15 天，部分扣 10% 服务费</td></tr>
+    <tr><td>价格</td><td><span class="score-2">2.5</span></td><td>一对一 280–700 元/节，全日制 8,000–22,000 元/学期，<strong>5 家中最高</strong></td></tr>
+    <tr style="font-weight:bold; background:#e8f0fe;"><td>综合加权</td><td>3.5/5.0</td><td>核心优势：个性化诊断、校区覆盖广、上门辅导</td></tr>
+  </table>
+
+  <h3>5.4 腾大教育 <span class="badge badge-local">苏州本土</span> <span class="badge badge-private">非上市</span></h3>
+  <table>
+    <tr><th>维度</th><th style="width:60px">评分</th><th>分析</th></tr>
+    <tr><td>影响力</td><td><span class="score-2">2.5</span></td><td>苏州本土深耕 17 年（2009 年成立），11 家直营校区覆盖苏州全域（含昆山、常熟、张家港），品牌仅限苏州及周边</td></tr>
+    <tr><td>口碑</td><td><span class="score-4">4.5</span></td><td>续课率/转介绍率自宣高，小升初择校成功率 92%；家长评价"管理严格""提分明显"，负面评价少</td></tr>
+    <tr><td>课程体系</td><td><span class="score-4">4.0</span></td><td>"三师课堂"严管体系，深度适配苏州本地教材和考纲，每周本土化教研；理科竞赛和择校冲刺是核心卖点</td></tr>
+    <tr><td>师资</td><td><span class="score-4">4.5</span></td><td>90%+ 教师有苏州本地 5 年+教学经验，一线教师占比 >80%，含 8 名省级奥赛教练；教师留存率高于全国品牌</td></tr>
+    <tr><td>服务</td><td><span class="score-4">4.0</span></td><td>"四位一体"服务体系，严管督学风格受苏州家长欢迎</td></tr>
+    <tr><td>价格</td><td><span class="score-3">3.5</span></td><td>小班 120–320 元/课时，一对一 200–450 元/课时，中等偏上</td></tr>
+    <tr style="font-weight:bold; background:#e8f0fe;"><td>综合加权</td><td>3.9/5.0</td><td>核心优势：本土化教研深度（无可替代）、师资稳定性、口碑（转介绍率）</td></tr>
+  </table>
+
+  <h3>5.5 锐思教育 <span class="badge badge-local">地方品牌</span> <span class="badge badge-private">非上市</span></h3>
+  <table>
+    <tr><th>维度</th><th style="width:60px">评分</th><th>分析</th></tr>
+    <tr><td>影响力</td><td><span class="score-2">2.0</span></td><td>苏州本土小型品牌，覆盖区域有限，品牌知名度低于腾大</td></tr>
+    <tr><td>口碑</td><td><span class="score-3">3.5</span></td><td>小班化精细管理获认可，对各校教学进度深入掌握；评价样本量小</td></tr>
+    <tr><td>课程体系</td><td><span class="score-3">3.5</span></td><td>小班化、精细化管理，熟悉苏州各校教学风格；体系规模不如腾大完整</td></tr>
+    <tr><td>师资</td><td><span class="score-3">3.5</span></td><td>本地化师资为主，具体数据公开有限</td></tr>
+    <tr><td>服务</td><td><span class="score-3">3.5</span></td><td>精细化管理风格，因规模小更灵活</td></tr>
+    <tr><td>价格</td><td><span class="score-3">3.5</span></td><td>预估中等水平，具体价格未公开</td></tr>
+    <tr style="font-weight:bold; background:#e8f0fe;"><td>综合加权</td><td>3.1/5.0</td><td>核心优势：小班化灵活管理、本土化教学</td></tr>
+  </table>
+</div>
+
+<!-- 六、综合排名 -->
+<div class="card" id="s6">
+  <h2>六、综合排名</h2>
+  <table>
+    <tr><th>排名</th><th>机构</th><th>影响力</th><th>口碑</th><th>课程</th><th>师资</th><th>服务</th><th>价格</th><th>加权总分</th></tr>
+    <tr>
+      <td><span class="rank-1">#1</span></td>
+      <td><strong>新东方苏州学校</strong></td>
+      <td><span class="score-5">5.0</span></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-4">4.5</span></td>
+      <td><span class="score-4">4.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><strong>4.2</strong></td>
+    </tr>
+    <tr>
+      <td><span class="rank-2">#2</span></td>
+      <td><strong>腾大教育</strong></td>
+      <td><span class="score-2">2.5</span></td>
+      <td><span class="score-4">4.5</span></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-4">4.5</span></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><strong>3.9</strong></td>
+    </tr>
+    <tr>
+      <td><span class="rank-2">#2</span></td>
+      <td><strong>苏州学而思培优</strong></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-4">4.5</span></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><strong>3.9</strong></td>
+    </tr>
+    <tr>
+      <td>#4</td>
+      <td><strong>苏州学大教育</strong></td>
+      <td><span class="score-4">4.0</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-2">2.5</span></td>
+      <td><strong>3.5</strong></td>
+    </tr>
+    <tr>
+      <td>#5</td>
+      <td><strong>锐思教育</strong></td>
+      <td><span class="score-2">2.0</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><span class="score-3">3.5</span></td>
+      <td><strong>3.1</strong></td>
+    </tr>
+  </table>
+</div>
+
+<!-- 七、结论与建议 -->
+<div class="card" id="s7">
+  <h2>七、结论与建议</h2>
+
+  <div class="conclusion-box">
+    <h3 style="margin-top:0;">7.1 核心结论</h3>
+    <p><strong>1. 综合影响力最强：新东方苏州学校。</strong>凭借全国第一的品牌势能、FY2025 营收 $49 亿的集团资源、最完整的课程线（学科+素养+出国），新东方在苏州 K12 市场综合影响力排名第一。但本土化适配和班课个性化程度有待提升。</p>
+    <p><strong>2. 用户口碑最强：腾大教育。</strong>在苏州家长群体中，腾大教育凭借 17 年本土深耕、极高的教师留存率、严格的「三师课堂」管理体系和突出的提分效果，获得了最高的口碑评价。但其转介绍率和续课率数据来自机构自宣，缺乏独立审计。</p>
+    <p><strong>3. 课程质量最强（理科培优）：苏州学而思培优。</strong>好未来集团的标准化教研能力和 AI 学习机生态为学而思构筑了差异化壁垒，在数学/物理等理科培优领域优势明显。但在苏线下网点收缩影响了覆盖面。</p>
+    <p><strong>4. 行业趋势：</strong>高中阶段学科培训（刚性需求）和素养类培训（政策合规方向）是两大增长引擎。科技赋能（AI 诊断、学习机）成为头部机构标配。</p>
+  </div>
+
+  <h3>7.2 选机构参考矩阵</h3>
+  <table>
+    <tr><th>学生画像</th><th>首选</th><th>次选</th><th>核心理由</th></tr>
+    <tr><td>重品牌信任、综合发展</td><td>新东方</td><td>腾大</td><td>品牌稳、课程全、全国资源</td></tr>
+    <tr><td>苏州升学冲刺、需严管</td><td>腾大</td><td>新东方</td><td>本土考纲精准、督学最严</td></tr>
+    <tr><td>理科竞赛/培优</td><td>学而思</td><td>腾大</td><td>理科教研行业第一</td></tr>
+    <tr><td>需极高个性化关注</td><td>学大</td><td>腾大</td><td>1 对 1 体系最成熟</td></tr>
+    <tr><td>预算有限、需性价比</td><td>腾大</td><td>学而思</td><td>班课性价比优、本土服务</td></tr>
+  </table>
+</div>
+
+<!-- 八、局限性声明 -->
+<div class="card" id="s8">
+  <h2>八、局限性声明</h2>
+  <div class="limitations">
+    <ol>
+      <li><strong>数据来源局限：</strong>苏州本土非上市机构（腾大教育、锐思教育）的运营数据（续班率、提分率、教师留存率等）完全依赖机构自宣和第三方营销文章，未经独立审计验证，可能存在夸大或选择性披露。</li>
+      <li><strong>公开数据滞后：</strong>上市公司最新财报截至 2025 财年（新东方 FY2025 截止 2025/05/31），部分 2025 年下半年及 2026 年数据尚未披露。</li>
+      <li><strong>市场规模为估算值：</strong>苏州 K12 课外辅导市场规模（60–100 亿元）基于全国数据和苏州人口/GDP 占比推算，非官方统计；部分行业自媒体引用"超百亿"说法缺乏可靠出处。</li>
+      <li><strong>用户口碑数据的代表性：</strong>本报告引用的用户口碑信息主要来自微信公众号测评文章和机构自宣材料，样本量和采样方法未经说明，可能存在幸存者偏差和选择偏差。</li>
+      <li><strong>苏州本地政策动态性：</strong>2024–2026 年是「双减」后行业规范化的关键期，政策调整可能改变竞争格局，本报告结论仅反映截至 2026 年 5 月的已知信息。</li>
+      <li><strong>未覆盖细分赛道：</strong>本报告聚焦于学科辅导类机构，未深入分析编程、美术、科学等非学科素养赛道，也未涵盖艺术/体育类培训机构。</li>
+      <li><strong>线上平台未纳入主排名：</strong>兔启 1 对 1、高分堂、荷叶学课等微信小程序类平台因运营模式差异较大（无实体校区、轻资产），未纳入六维度对比框架，但其在价格和资金安全方面具有优势。</li>
+    </ol>
+  </div>
+</div>
+
+<!-- 页脚 -->
+<div class="footer">
+  <p>本报告不构成投资建议或机构选择推荐，仅供研究参考。</p>
+  <p>调研日期：2026 年 5 月 &nbsp;|&nbsp; 数据截至：2025 年 5 月（最新完整财年数据）</p>
+</div>
+
+</div>
+</body>
+</html>
