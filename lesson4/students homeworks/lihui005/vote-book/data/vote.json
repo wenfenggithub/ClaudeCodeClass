@@ -1,0 +1,34 @@
+{
+  "book-003": {
+    "bookId": "book-003",
+    "count": 0
+  },
+  "book-004": {
+    "bookId": "book-004",
+    "count": 1
+  },
+  "book-005": {
+    "bookId": "book-005",
+    "count": 0
+  },
+  "book-006": {
+    "bookId": "book-006",
+    "count": 0
+  },
+  "book-007": {
+    "bookId": "book-007",
+    "count": 0
+  },
+  "book-008": {
+    "bookId": "book-008",
+    "count": 0
+  },
+  "book-010": {
+    "bookId": "book-010",
+    "count": 0
+  },
+  "book-011": {
+    "bookId": "book-011",
+    "count": 0
+  }
+}
