@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第6课 PPT · 用 Claude 做数据分析、处理与可视化</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --ink:#1f2430; --soft:#5b6472; --line:#e6e9ef;
+    --brand:#d97757; --brand-soft:#fbeee8;
+    --blue:#4a7bd6; --blue-soft:#eaf1fb;
+    --green:#3f9e6b; --green-soft:#e9f6ef;
+    --amber:#c98a1e; --amber-soft:#fbf2e0;
+    --code-bg:#2b303b; --code-ink:#e9edf4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--ink); overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  /* Stage */
+  #stage{ position:fixed; inset:0; display:grid; place-items:center; }
+  .slide{
+    display:none; width:min(1180px,94vw); height:min(680px,90vh);
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    box-shadow:0 10px 50px rgba(20,28,45,.10); padding:54px 64px;
+    position:relative; overflow:hidden; flex-direction:column;
+  }
+  .slide.active{ display:flex; animation:fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+  /* common bits */
+  .kicker{ display:inline-block; font-size:14px; font-weight:700; letter-spacing:.1em;
+    color:var(--brand); background:var(--brand-soft); padding:6px 14px; border-radius:999px; align-self:flex-start;}
+  h1{ font-size:46px; line-height:1.2; letter-spacing:-.01em; margin:18px 0 14px; }
+  h2{ font-size:34px; line-height:1.25; margin:0 0 22px; }
+  h3{ font-size:21px; }
+  p.lead{ font-size:21px; color:var(--soft); line-height:1.6; max-width:880px; }
+  .slide-num{ position:absolute; bottom:20px; right:28px; font-size:13px; color:#aab2c0; font-variant-numeric:tabular-nums;}
+  .slide-foot{ position:absolute; bottom:20px; left:28px; font-size:13px; color:#c2c8d2;}
+
+  /* progress + dots */
+  #bar{ position:fixed; top:0; left:0; height:4px; background:var(--brand); z-index:10; transition:width .3s; }
+  #help{ position:fixed; bottom:10px; left:50%; transform:translateX(-50%); font-size:12px; color:#aab2c0; z-index:10;}
+
+  /* cover */
+  .cover{ background:linear-gradient(135deg,#fff 0%,#fdf3ee 100%); }
+  .cover h1{ font-size:52px; }
+  .cover .chips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:26px;}
+  .chip{ background:#fff; border:1px solid var(--line); border-radius:999px; padding:8px 16px; font-size:15px; color:var(--soft);}
+  .chip strong{ color:var(--ink); }
+
+  /* lists */
+  ul.big{ list-style:none; margin-top:10px;}
+  ul.big li{ position:relative; padding-left:38px; margin-bottom:20px; font-size:21px; line-height:1.5;}
+  ul.big li .ic{ position:absolute; left:0; top:2px; width:26px; height:26px; border-radius:8px;
+    background:var(--brand-soft); color:var(--brand); display:grid; place-items:center; font-size:15px; font-weight:700;}
+
+  /* flow / pipeline */
+  .flow{ display:flex; align-items:stretch; gap:14px; margin-top:24px; flex-wrap:wrap;}
+  .step{ flex:1; min-width:130px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 16px; text-align:center;}
+  .step .n{ font-size:13px; color:var(--brand); font-weight:700;}
+  .step .t{ font-size:22px; font-weight:700; margin:8px 0 4px;}
+  .step .d{ font-size:14px; color:var(--soft);}
+  .step.s1{border-top:4px solid var(--green);} .step.s2{border-top:4px solid var(--blue);}
+  .step.s3{border-top:4px solid var(--amber);} .step.s4{border-top:4px solid var(--brand);}
+  .step.s5{border-top:4px solid #8e63c9;}
+
+  /* two column */
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:26px; flex:1; min-height:0;}
+  .cols.narrow-left{ grid-template-columns:.85fr 1.15fr;}
+  .panel-label{ font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--soft); margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+  .panel-label .dot{ width:8px;height:8px;border-radius:50%;background:var(--brand);}
+
+  /* data table */
+  .data-wrap{ border:1px solid var(--line); border-radius:10px; overflow:auto; }
+  table.data{ width:100%; border-collapse:collapse; font-size:13px;}
+  table.data th{ background:#f1f3f7; text-align:left; padding:7px 10px; font-weight:600; white-space:nowrap; border-bottom:1px solid var(--line);}
+  table.data td{ padding:6px 10px; border-bottom:1px solid var(--line); color:var(--soft); white-space:nowrap;}
+  table.data tr:last-child td{border-bottom:none;}
+  table.data .muted{ color:#aab2c0; font-style:italic;}
+  .cap{ font-size:13px; color:var(--soft); margin-top:8px;}
+
+  /* prompt */
+  .prompt{ background:var(--code-bg); color:var(--code-ink); border-radius:12px; padding:18px 20px;
+    font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace; font-size:14px; line-height:1.6;
+    white-space:pre-wrap; word-break:break-word; position:relative; overflow:auto;}
+  .prompt .tag{ position:absolute; top:0; right:0; background:var(--brand); color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:.05em;}
+  code.inline{ background:#eef0f4; color:var(--brand); padding:1px 7px; border-radius:5px; font-family:"SF Mono",Menlo,monospace; font-size:.92em;}
+
+  /* callouts */
+  .note{ background:var(--amber-soft); border-left:4px solid var(--amber); border-radius:8px; padding:14px 18px; font-size:16px; line-height:1.55;}
+  .note .nl{font-weight:700; color:var(--amber);}
+  .tip{ background:var(--blue-soft); border-left:4px solid var(--blue); border-radius:8px; padding:14px 18px; font-size:16px; line-height:1.55;}
+  .tip .nl{font-weight:700; color:var(--blue);}
+  .ok{ background:var(--green-soft); border-left:4px solid var(--green); border-radius:8px; padding:14px 18px; font-size:16px; line-height:1.55;}
+  .ok .nl{font-weight:700; color:var(--green);}
+
+  ul.pts{list-style:none; margin-top:4px;}
+  ul.pts li{ position:relative; padding-left:26px; margin-bottom:12px; font-size:16.5px; line-height:1.5;}
+  ul.pts li::before{ content:"✓"; position:absolute; left:0; top:0; color:var(--green); font-weight:700;}
+
+  .out{ font-size:16.5px; line-height:1.6; color:var(--ink);}
+  .out b{ color:var(--brand);}
+
+  /* divider slide */
+  .divider{ background:linear-gradient(135deg,#2b303b 0%,#3a4150 100%); color:#fff; border:none;}
+  .divider .kicker{ background:rgba(255,255,255,.12); color:#fff;}
+  .divider h1{ color:#fff; font-size:48px;}
+  .divider p.lead{ color:#c2c8d2;}
+  .divider .slide-num,.divider .slide-foot{ color:rgba(255,255,255,.4);}
+  .part-dots{ display:flex; gap:10px; margin-top:24px;}
+  .part-dots span{ font-size:15px; color:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:5px 14px;}
+  .part-dots span.on{ color:#fff; background:var(--brand); border-color:var(--brand); font-weight:600;}
+
+  /* timeline mini */
+  .tl{ display:flex; flex-direction:column; gap:7px; margin-top:6px; font-size:15px;}
+  .tl .row{ display:flex; gap:14px; align-items:center; padding:7px 14px; background:#f7f8fa; border:1px solid var(--line); border-radius:9px;}
+  .tl .row.br{ background:var(--brand-soft); color:var(--brand); font-weight:600;}
+  .tl .tm{ color:var(--brand); font-weight:700; width:120px; font-variant-numeric:tabular-nums;}
+  .tl .dd{ margin-left:auto; color:var(--soft); font-size:13px;}
+
+  /* summary cards */
+  .grid4{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:8px;}
+  .mc{ background:#f7f8fa; border:1px solid var(--line); border-radius:14px; padding:20px 22px;}
+  .mc h3{ margin-bottom:8px;}
+  .mc p{ color:var(--soft); font-size:16px; line-height:1.5;}
+
+  .case-meta{ display:flex; gap:10px; align-items:center; margin-bottom:6px; flex-wrap:wrap;}
+  .b-num{ background:var(--ink); color:#fff; font-size:13px; font-weight:700; padding:4px 11px; border-radius:999px;}
+  .lvl{ font-size:13px; font-weight:600; padding:4px 11px; border-radius:999px;}
+  .lvl-1{background:var(--green-soft); color:var(--green);} .lvl-2{background:var(--blue-soft); color:var(--blue);}
+  .lvl-3{background:var(--amber-soft); color:var(--amber);} .lvl-4{background:var(--brand-soft); color:var(--brand);}
+  .dur{ margin-left:auto; font-size:14px; color:var(--soft);}
+
+  @media (max-width:760px){
+    .slide{ padding:30px 26px; height:92vh;}
+    h1{font-size:32px;} .cover h1{font-size:34px;} h2{font-size:25px;}
+    .cols{ grid-template-columns:1fr; gap:16px; overflow:auto;}
+    p.lead{font-size:17px;} ul.big li{font-size:17px;}
+  }
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage">
+
+  <!-- 1 Cover -->
+  <section class="slide cover active">
+    <span class="kicker">AI 系列课 · 第 6 课</span>
+    <h1>用 Claude 做数据分析、<br>数据处理与数据可视化</h1>
+    <p class="lead">从一份原始数据，到一张图、一个结论 —— 用 Claude Code 走完数据工作的完整闭环。无需编程基础。</p>
+    <div class="chips">
+      <span class="chip">🕐 <strong>3 小时</strong></span>
+      <span class="chip">👥 有基础 CC 经验的成年人</span>
+      <span class="chip">📦 <strong>7 主线 + 2 经典延伸</strong></span>
+      <span class="chip">🛠 Claude Code + Python/pandas</span>
+    </div>
+    <div class="slide-foot">第 6 课教学 PPT</div>
+    <div class="slide-num">01</div>
+  </section>
+
+  <!-- 2 导入 -->
+  <section class="slide">
+    <span class="kicker">开场导入</span>
+    <h2>过去 vs 现在</h2>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>过去做数据分析</div>
+        <ul class="pts">
+          <li>要学 Excel 复杂公式、甚至写代码</li>
+          <li>清洗脏数据靠手工，一改一上午</li>
+          <li>画图要记一堆参数，配色全靠调</li>
+          <li>普通人望而却步</li>
+        </ul>
+      </div>
+      <div>
+        <div class="panel-label" style="color:var(--brand)"><span class="dot"></span>现在 · 用 Claude</div>
+        <div class="ok"><span class="nl">一句话 = 一个分析。</span><br>你只负责"说清楚要什么"，Claude 负责读数据、写代码、清洗、画图、还能帮你写结论。今天我们就把这套本事学到手。</div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </section>
+
+  <!-- 3 学习目标 -->
+  <section class="slide">
+    <span class="kicker">学习目标</span>
+    <h2>上完这节课，你能……</h2>
+    <ul class="big">
+      <li><span class="ic">1</span>把杂乱的原始数据交给 Claude，让它读懂、清洗、整理成可分析的表格。</li>
+      <li><span class="ic">2</span>用自然语言完成统计、汇总、多表合并——以前要写代码才能做的事。</li>
+      <li><span class="ic">3</span>让 Claude 生成图表，并能根据图说出业务结论。</li>
+      <li><span class="ic">4</span>掌握一套可复用的"提示词套路"，用到自己的真实数据上。</li>
+    </ul>
+    <div class="slide-num">03</div>
+  </section>
+
+  <!-- 4 数据闭环 -->
+  <section class="slide">
+    <span class="kicker">核心主线</span>
+    <h2>记住这一条主线：数据闭环</h2>
+    <p class="lead">任何数据任务，都能套进这五步。今天的案例就是沿着这条线由浅入深。</p>
+    <div class="flow">
+      <div class="step s1"><div class="n">STEP 1</div><div class="t">读</div><div class="d">看懂数据</div></div>
+      <div class="step s2"><div class="n">STEP 2</div><div class="t">算/洗</div><div class="d">统计与清洗</div></div>
+      <div class="step s3"><div class="n">STEP 3</div><div class="t">合</div><div class="d">多表合并</div></div>
+      <div class="step s4"><div class="n">STEP 4</div><div class="t">画</div><div class="d">可视化</div></div>
+      <div class="step s5"><div class="n">STEP 5</div><div class="t">出结论</div><div class="d">图文报告</div></div>
+    </div>
+    <div class="slide-num">04</div>
+  </section>
+
+  <!-- 5 路线图 -->
+  <section class="slide">
+    <span class="kicker">今天的路线图</span>
+    <h2>180 分钟怎么安排</h2>
+    <div class="tl">
+      <div class="row"><span class="tm">0:00–0:10</span><span>开场 + 回顾 + 数据闭环地图</span><span class="dd">10 分</span></div>
+      <div class="row"><span class="tm">0:10–0:40</span><span>案例 1–2 · 读数据 / 统计排名</span><span class="dd">30 分</span></div>
+      <div class="row"><span class="tm">0:40–1:00</span><span>案例 3 · 数据清洗</span><span class="dd">20 分</span></div>
+      <div class="row br"><span class="tm">1:00–1:10</span><span>☕ 中场休息</span><span class="dd">10 分</span></div>
+      <div class="row"><span class="tm">1:10–1:50</span><span>案例 4–5 · 多表合并 / 基础可视化</span><span class="dd">40 分</span></div>
+      <div class="row"><span class="tm">1:50–2:10</span><span>案例 6 · 进阶可视化</span><span class="dd">20 分</span></div>
+      <div class="row"><span class="tm">2:15–2:35</span><span>案例 7 · 自动分析报告</span><span class="dd">20 分</span></div>
+      <div class="row"><span class="tm">2:35–3:00</span><span>综合练习 + 总结（经典案例 8/9 选讲）</span><span class="dd">25 分</span></div>
+    </div>
+    <div class="slide-num">05</div>
+  </section>
+
+  <!-- 6 Divider 入门 -->
+  <section class="slide divider">
+    <span class="kicker">第一部分</span>
+    <h1>入门：读懂数据、做统计</h1>
+    <p class="lead">先把数据"看明白"，再让 Claude 替你算。</p>
+    <div class="part-dots"><span class="on">入门</span><span>清洗合并</span><span>可视化</span><span>出结论</span><span>经典延伸</span></div>
+    <div class="slide-num">06</div>
+  </section>
+
+  <!-- 7 案例1 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 1</span><span class="lvl lvl-1">入门 · 读数据</span><span class="dur">⏱ 15 分钟</span></div>
+    <h2>看懂一份数据 —— Claude 当你的"数据翻译官"</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">记了三个月的家庭账本，密密麻麻看不出名堂。第一步不是分析，而是先让 Claude 告诉你：<b style="color:var(--brand)">这份数据里到底有什么。</b></p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">家庭记账.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>日期</th><th>类别</th><th>项目</th><th>金额</th><th>支付方式</th></tr>
+            <tr><td>2026-03-01</td><td>餐饮</td><td>早餐豆浆油条</td><td>12</td><td>微信</td></tr>
+            <tr><td>2026-03-01</td><td>交通</td><td>地铁</td><td>6</td><td>交通卡</td></tr>
+            <tr><td>2026-03-02</td><td>购物</td><td>超市日用品</td><td>238</td><td>支付宝</td></tr>
+            <tr><td>2026-03-03</td><td>餐饮</td><td>家庭聚餐</td><td>420</td><td>信用卡</td></tr>
+            <tr><td colspan="5" class="muted">…（约 120 行，覆盖 3~5 月）</td></tr>
+          </table>
+        </div>
+        <p class="cap">小技巧：可让 Claude 帮你生成这份示例数据。</p>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </section>
+
+  <!-- 8 案例1 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 1</span><span class="lvl lvl-1">入门 · 读数据</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>我有一个家庭记账的 CSV 文件 家庭记账.csv。
+请你读取它，然后用通俗的语言告诉我：
+1. 一共多少行多少列，每列是什么意思；
+2. 时间范围从哪天到哪天；
+3. 有没有明显的空白、重复或异常数据；
+4. 用三句话总结这份账本。
+
+如果文件不存在，请先帮我造一份约 120 行、
+覆盖 3~5 月的示例数据，再做分析。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">一份"<b>数据体检报告</b>"：行列数、字段含义、时间跨度、数据质量提示，加一段大白话总结。<br><br>这一步不产生图表，只产生<b>理解</b>。</p>
+        <div class="tip" style="margin-top:16px"><span class="nl">核心心法：</span>分析任何数据前，先做"数据体检"，避免在错误的数据上白忙活。</div>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </section>
+
+  <!-- 9 案例2 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 2</span><span class="lvl lvl-1">入门 · 算统计</span><span class="dur">⏱ 15 分钟</span></div>
+    <h2>简单统计与排名 —— 一句话搞定 Excel 公式的活</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">班主任想知道：班级平均分、谁是前三名、哪门课最拉胯。以前要拉公式、做排序，<b style="color:var(--brand)">现在直接说人话。</b></p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">成绩单.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>学号</th><th>姓名</th><th>语文</th><th>数学</th><th>英语</th></tr>
+            <tr><td>01</td><td>张伟</td><td>88</td><td>92</td><td>76</td></tr>
+            <tr><td>02</td><td>李娜</td><td>95</td><td>78</td><td>90</td></tr>
+            <tr><td>03</td><td>王芳</td><td>72</td><td>85</td><td>68</td></tr>
+            <tr><td>04</td><td>刘强</td><td>80</td><td>60</td><td>82</td></tr>
+            <tr><td>05</td><td>陈静</td><td>91</td><td>94</td><td>88</td></tr>
+            <tr><td colspan="5" class="muted">…（共 30 名学生）</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">09</div>
+  </section>
+
+  <!-- 10 案例2 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 2</span><span class="lvl lvl-1">入门 · 算统计</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>用 成绩单.csv（30 名学生，语文/数学/英语）：
+1. 给每个学生算总分、平均分，加一列"总分排名"；
+2. 算三门课各自的班级平均分、最高分、最低分；
+3. 告诉我总分前三名，以及哪门课全班最弱；
+4. 把带排名的结果存为 成绩单_结果.csv。
+
+请一步步说明你做了什么，结果用表格展示。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">自动写好的脚本 + 排序后的成绩表 + 新文件 <code class="inline">成绩单_结果.csv</code> + 一句结论（"全班英语最弱，平均 78 分"）。</p>
+        <ul class="pts" style="margin-top:14px">
+          <li><b>提需求，不写代码</b>：你说要什么，Claude 负责怎么做。</li>
+          <li>养成<b>把结果存成新文件</b>的习惯，为后续案例铺路。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="slide-num">10</div>
+  </section>
+
+  <!-- 11 Divider 清洗合并 -->
+  <section class="slide divider">
+    <span class="kicker">第二部分</span>
+    <h1>进阶：清洗与合并</h1>
+    <p class="lead">真实数据没那么干净，也很少只有一张表。</p>
+    <div class="part-dots"><span>入门</span><span class="on">清洗合并</span><span>可视化</span><span>出结论</span><span>经典延伸</span></div>
+    <div class="slide-num">11</div>
+  </section>
+
+  <!-- 12 案例3 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 3</span><span class="lvl lvl-2">进阶 · 清洗</span><span class="dur">⏱ 20 分钟</span></div>
+    <h2>数据清洗 —— 收拾一张"脏乱差"的订单表</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">系统导出的订单表：日期格式五花八门、金额带 ￥ 和空格、有重复行和空值。<b style="color:var(--brand)">真实工作中最常见、最费时的环节。</b></p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">订单_脏数据.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>订单号</th><th>客户</th><th>下单日期</th><th>金额</th><th>状态</th></tr>
+            <tr><td>1001</td><td>张伟</td><td>2026/3/1</td><td>￥ 238.00</td><td>已完成</td></tr>
+            <tr><td>1002</td><td>李娜</td><td>2026-03-02</td><td>420</td><td>已完成</td></tr>
+            <tr><td>1003</td><td class="muted">（空）</td><td>3月3日</td><td>￥186</td><td>已取消</td></tr>
+            <tr><td>1002</td><td>李娜</td><td>2026-03-02</td><td>420</td><td>已完成</td></tr>
+            <tr><td>1004</td><td>王芳</td><td>2026.3.5</td><td>￥ 99.9 </td><td>完成</td></tr>
+          </table>
+        </div>
+        <p class="cap">日期 4 种写法 · 金额带符号 · 1002 重复 · 客户空值 · 状态不统一</p>
+      </div>
+    </div>
+    <div class="slide-num">12</div>
+  </section>
+
+  <!-- 13 案例3 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 3</span><span class="lvl lvl-2">进阶 · 清洗</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>订单_脏数据.csv 是脏数据，请清洗：
+1. 日期统一成 YYYY-MM-DD；
+2. 金额清成纯数字（去 ￥ 和空格），转数值；
+3. 删除完全重复的行；
+4. "完成"和"已完成"统一成"已完成"；
+5. 客户为空的行单独列出，先别删。
+
+清洗前后各多少行，列出每处修改，
+干净数据存为 订单_清洗后.csv。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">"清洗日志"（改了哪些、删了几行重复、几个空值）+ 规整的 <code class="inline">订单_清洗后.csv</code> + 需人工确认的"问题行"清单。</p>
+        <div class="note" style="margin-top:16px"><span class="nl">最重要的职业习惯：</span>清洗要<b>可逆、可核对</b>——让 Claude 列出每处改动；删除类操作要谨慎（空值先列出，别急着删），绝不黑箱。</div>
+      </div>
+    </div>
+    <div class="slide-num">13</div>
+  </section>
+
+  <!-- 14 案例4 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 4</span><span class="lvl lvl-2">进阶 · 合并</span><span class="dur">⏱ 20 分钟</span></div>
+    <h2>多表合并 —— 把"订单表"和"客户表"拼起来</h2>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="out" style="font-size:17px">订单表里只有客户名，城市和会员等级在另一张表。想分析"哪个城市的金牌会员买得最多"，得先把两张表<b>用共同的列对上号</b>。</p>
+        <div class="panel-label" style="margin-top:18px"><span class="dot"></span><code class="inline">订单_清洗后.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>订单号</th><th>客户</th><th>金额</th></tr>
+            <tr><td>1001</td><td>张伟</td><td>238.0</td></tr>
+            <tr><td>1002</td><td>李娜</td><td>420.0</td></tr>
+            <tr><td>1004</td><td>王芳</td><td>99.9</td></tr>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span><code class="inline">客户信息.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>客户</th><th>城市</th><th>会员等级</th></tr>
+            <tr><td>张伟</td><td>北京</td><td>金牌</td></tr>
+            <tr><td>李娜</td><td>上海</td><td>普通</td></tr>
+            <tr><td>王芳</td><td>北京</td><td>金牌</td></tr>
+          </table>
+        </div>
+        <div class="prompt" style="margin-top:16px; font-size:13px"><span class="tag">PROMPT</span>用"客户"列合并 订单_清洗后.csv 和 客户信息.csv：
+1. 合并成一张完整的表；
+2. 客户在客户表里找不到的，单独告诉我（别丢）；
+3. 按"城市+会员等级"汇总总消费金额；
+4. 存为 订单_含客户信息.csv。</div>
+      </div>
+    </div>
+    <div class="slide-num">14</div>
+  </section>
+
+  <!-- 15 案例4 要点 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 4</span><span class="lvl lvl-2">进阶 · 合并</span><span class="dur">产出 & 要点</span></div>
+    <h2>合并的产出与关键提醒</h2>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">合并后的宽表 + "城市 × 会员等级"消费汇总（如：北京金牌 337.9 元）+ 一份匹配不上的订单清单。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>讲解要点</div>
+        <ul class="pts">
+          <li>用大白话讲"合并/关联"：用一个共同的列（这里是"客户"）把两张表对上号，<b>像拼图</b>。</li>
+          <li>合并最容易<b>悄悄丢数据</b>——一定让 Claude 报告"匹配不上的行"。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="slide-num">15</div>
+  </section>
+
+  <!-- 16 Divider 可视化 -->
+  <section class="slide divider">
+    <span class="kicker">第三部分</span>
+    <h1>可视化：让数据开口说话</h1>
+    <p class="lead">数字看不出感觉，画成图，规律一眼就懂。</p>
+    <div class="part-dots"><span>入门</span><span>清洗合并</span><span class="on">可视化</span><span>出结论</span><span>经典延伸</span></div>
+    <div class="slide-num">16</div>
+  </section>
+
+  <!-- 17 案例5 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 5</span><span class="lvl lvl-3">可视化 · 基础</span><span class="dur">⏱ 20 分钟</span></div>
+    <h2>基础可视化 —— 把月度销售画成趋势图</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">一串销售数字看不出感觉，画成折线图后，"哪个月涨了、哪个月跌了"<b style="color:var(--brand)">一眼就懂</b>。从"看不懂"到"有洞察"的关键一跳。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">月度销售.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>月份</th><th>线上销售额</th><th>线下销售额</th></tr>
+            <tr><td>2026-01</td><td>52000</td><td>48000</td></tr>
+            <tr><td>2026-02</td><td>61000</td><td>45000</td></tr>
+            <tr><td>2026-03</td><td>58000</td><td>52000</td></tr>
+            <tr><td>2026-04</td><td>73000</td><td>50000</td></tr>
+            <tr><td>2026-05</td><td>89000</td><td>47000</td></tr>
+            <tr><td>2026-06</td><td>95000</td><td>49000</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">17</div>
+  </section>
+
+  <!-- 18 案例5 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 5</span><span class="lvl lvl-3">可视化 · 基础</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>用 月度销售.csv 画折线图：
+- 横轴月份，画"线上""线下"两条曲线；
+- 中文标题"2026 上半年线上 vs 线下销售趋势"，
+  加坐标轴标签和图例；
+- 数据点标出数值，配色淡雅；
+- 保存为 销售趋势.png。
+
+画完用两三句话告诉我最值得注意的趋势。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out"><code class="inline">销售趋势.png</code> + 文字洞察："线上从 1 月到 6 月几乎翻倍，线下基本持平，<b>增长全靠线上</b>。"</p>
+        <div class="note" style="margin-top:16px"><span class="nl">常见坑：</span>matplotlib 默认<b>显示不了中文</b>（变方框）。对 Claude 说"图里中文显示成方框了，请设置中文字体修复"即可。</div>
+      </div>
+    </div>
+    <div class="slide-num">18</div>
+  </section>
+
+  <!-- 19 案例6 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 6</span><span class="lvl lvl-3">可视化 · 进阶</span><span class="dur">⏱ 20 分钟</span></div>
+    <h2>进阶可视化 —— 运动手环的多维仪表盘</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">手环导出一个月的步数、睡眠、心率。单看哪项都不够，<b style="color:var(--brand)">组合成一张"多图面板"</b>，才能看出生活规律。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">手环数据.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>日期</th><th>星期</th><th>步数</th><th>睡眠</th><th>静息心率</th></tr>
+            <tr><td>05-01</td><td>周五</td><td>8200</td><td>7.5</td><td>62</td></tr>
+            <tr><td>05-02</td><td>周六</td><td>12500</td><td>8.2</td><td>58</td></tr>
+            <tr><td>05-03</td><td>周日</td><td>3100</td><td>9.0</td><td>60</td></tr>
+            <tr><td>05-04</td><td>周一</td><td>6800</td><td>6.3</td><td>65</td></tr>
+            <tr><td>05-05</td><td>周二</td><td>7400</td><td>6.8</td><td>64</td></tr>
+            <tr><td colspan="5" class="muted">…（共 31 天）</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">19</div>
+  </section>
+
+  <!-- 20 案例6 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 6</span><span class="lvl lvl-3">可视化 · 进阶</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>用 手环数据.csv 做组合图，上下三个子图共用横轴：
+1. 上：每日步数柱状图，周末用不同颜色突出；
+2. 中：睡眠折线图，画一条 7 小时参考虚线；
+3. 下：静息心率折线图。
+
+配色淡雅、标题清晰，保存为 健康面板.png。
+最后分析：步数、睡眠在工作日和周末有何规律？
+睡得少的第二天心率有没有变高？</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">三合一的 <code class="inline">健康面板.png</code> + 跨维度规律分析："周末步数高、睡眠足；工作日睡不够时静息心率明显偏高。"</p>
+        <div class="tip" style="margin-top:16px"><span class="nl">重点：</span>让 Claude 不只<b>画图</b>，还要<b>解读指标之间的关系</b>——这才是分析，不只是制图。</div>
+      </div>
+    </div>
+    <div class="slide-num">20</div>
+  </section>
+
+  <!-- 21 Divider 出结论 -->
+  <section class="slide divider">
+    <span class="kicker">第四部分</span>
+    <h1>综合：从数据到结论</h1>
+    <p class="lead">把读、洗、合、画全部打包成一份报告。</p>
+    <div class="part-dots"><span>入门</span><span>清洗合并</span><span>可视化</span><span class="on">出结论</span><span>经典延伸</span></div>
+    <div class="slide-num">21</div>
+  </section>
+
+  <!-- 22 案例7 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 7</span><span class="lvl lvl-4">综合 · 出结论</span><span class="dur">⏱ 20 分钟</span></div>
+    <h2>从数据到结论 —— 一句话生成完整分析报告</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:18px">老板说"把这季度销售理一份报告给我"。这步把前面学的<b style="color:var(--brand)">读、洗、合、画全部打包</b>，自动跑完整个流程。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">季度销售明细.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>日期</th><th>地区</th><th>品类</th><th>销售额</th><th>客户数</th></tr>
+            <tr><td>04-01</td><td>华北</td><td>家电</td><td>32000</td><td>14</td></tr>
+            <tr><td>04-01</td><td>华东</td><td>服饰</td><td>18500</td><td>40</td></tr>
+            <tr><td>04-02</td><td>华南</td><td>家电</td><td>27000</td><td>11</td></tr>
+            <tr><td>04-02</td><td>华东</td><td>食品</td><td>9600</td><td>52</td></tr>
+            <tr><td colspan="5" class="muted">…（约 300 行，3 地区 × 4 品类）</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">22</div>
+  </section>
+
+  <!-- 23 案例7 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 7</span><span class="lvl lvl-4">综合 · 出结论</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>季度销售明细.csv 是 Q2 销售流水。
+生成一份给管理层看的季度分析报告：
+1. 总体概览：总销售额、总客户数、客单价；
+2. 按"地区""品类"分别汇总，各画柱状图；
+3. 月度销售趋势折线图；
+4. 找出最好/最差的地区与品类，给可能原因；
+5. 给 3 条下季度可执行建议。
+
+图存为 PNG，报告整理成 季度报告.md，
+图文并茂，面向非技术管理者。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出</div>
+        <p class="out">多张图表 PNG + 结构化的 <code class="inline">季度报告.md</code>（概览 / 图表 / 亮点短板 / 建议）。可再导出成 PDF。</p>
+        <div class="tip" style="margin-top:16px"><span class="nl">升华：</span>你指挥的不是"画图工具"，而是一个<b>会读数据、会决定怎么分析、还能写结论的分析助手</b>。"把结论写给非技术读者看"是高质量提示词的标志。</div>
+      </div>
+    </div>
+    <div class="slide-num">23</div>
+  </section>
+
+  <!-- 24 Divider 经典 -->
+  <section class="slide divider">
+    <span class="kicker">第五部分 · 选讲 / 课后拓展</span>
+    <h1>数据科学的两个"明星数据集"</h1>
+    <p class="lead">几乎所有教程都会用到，网上随处可下载，Claude 也能直接获取。</p>
+    <div class="part-dots"><span>入门</span><span>清洗合并</span><span>可视化</span><span>出结论</span><span class="on">经典延伸</span></div>
+    <div class="slide-num">24</div>
+  </section>
+
+  <!-- 25 案例8 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 8</span><span class="lvl lvl-4">经典 · 探索性分析</span><span class="dur">⏱ 选讲 ~20 分钟</span></div>
+    <h2>泰坦尼克号生存分析 —— 数据科学的 "Hello World"</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:17px">1912 年沉船，891 名乘客有人生还有人遇难。全世界用它入门<b style="color:var(--brand)">探索性数据分析（EDA）</b>：从乘客信息里找出"什么样的人更容易活下来"。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">titanic.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>是否生还</th><th>船舱</th><th>性别</th><th>年龄</th><th>票价</th></tr>
+            <tr><td>0 遇难</td><td>3</td><td>男</td><td>22</td><td>7.25</td></tr>
+            <tr><td>1 生还</td><td>1</td><td>女</td><td>38</td><td>71.28</td></tr>
+            <tr><td>1 生还</td><td>3</td><td>女</td><td>26</td><td>7.92</td></tr>
+            <tr><td>1 生还</td><td>1</td><td>女</td><td>35</td><td>53.10</td></tr>
+            <tr><td>0 遇难</td><td>3</td><td>男</td><td>35</td><td>8.05</td></tr>
+            <tr><td colspan="5" class="muted">…891 行；年龄约 20% 缺失</td></tr>
+          </table>
+        </div>
+        <p class="cap">seaborn 自带，可让 Claude 直接加载。</p>
+      </div>
+    </div>
+    <div class="slide-num">25</div>
+  </section>
+
+  <!-- 26 案例8 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 8</span><span class="lvl lvl-4">经典 · EDA</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>加载经典的泰坦尼克数据集（seaborn 自带 titanic），
+做探索性分析：
+1. 数据体检：行列、年龄等缺失多少；
+2. 总体生还率，再按"性别""船舱等级"分别算；
+3. 画图：男女生还率对比、各舱等级生还率对比、
+   生还/遇难的年龄分布直方图；
+4. 三五句话总结"什么样的乘客更容易生还"及原因。
+
+图存为 PNG，中文标题、配色淡雅。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出 & 结论</div>
+        <p class="out">体检报告 + 几张对比图 + 经典结论：<b>女性、儿童、头等舱乘客生还率显著更高</b>——印证"妇女儿童优先"与阶层差异。</p>
+        <ul class="pts" style="margin-top:14px">
+          <li>把"读+洗+算+画+结论"五步用在真实经典数据上的完整复盘。</li>
+          <li>EDA 思维：<b>带着问题去"逛"数据</b>，让图表告诉你答案。</li>
+          <li>"分组对比"是最常用的发现规律手法。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="slide-num">26</div>
+  </section>
+
+  <!-- 27 案例9 场景 -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 9</span><span class="lvl lvl-4">经典 · 关系可视化</span><span class="dur">⏱ 选讲 ~20 分钟</span></div>
+    <h2>鸢尾花数据集 —— 用图看清"变量之间的关系"</h2>
+    <div class="cols narrow-left">
+      <div>
+        <div class="panel-label"><span class="dot"></span>场景</div>
+        <p class="lead" style="font-size:17px">3 种鸢尾花、每种 50 朵的花瓣花萼尺寸。核心问题：<b style="color:var(--brand)">仅凭几个测量值，能不能把品种区分开</b>？理解"相关性"和"聚类"的最佳入门。</p>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>示例数据 <code class="inline">iris.csv</code></div>
+        <div class="data-wrap">
+          <table class="data">
+            <tr><th>萼长</th><th>萼宽</th><th>瓣长</th><th>瓣宽</th><th>品种</th></tr>
+            <tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr>
+            <tr><td>4.9</td><td>3.0</td><td>1.4</td><td>0.2</td><td>setosa</td></tr>
+            <tr><td>7.0</td><td>3.2</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr>
+            <tr><td>6.4</td><td>3.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr>
+            <tr><td>6.3</td><td>3.3</td><td>6.0</td><td>2.5</td><td>virginica</td></tr>
+            <tr><td colspan="5" class="muted">…150 行，每种 50 行（厘米）</td></tr>
+          </table>
+        </div>
+        <p class="cap">同样 seaborn 自带，一行代码加载。</p>
+      </div>
+    </div>
+    <div class="slide-num">27</div>
+  </section>
+
+  <!-- 28 案例9 prompt -->
+  <section class="slide">
+    <div class="case-meta"><span class="b-num">案例 9</span><span class="lvl lvl-4">经典 · 关系</span><span class="dur">提示词 & 产出</span></div>
+    <div class="cols">
+      <div>
+        <div class="panel-label"><span class="dot"></span>照抄给 Claude</div>
+        <div class="prompt"><span class="tag">PROMPT</span>加载经典鸢尾花数据集（seaborn 的 iris），探索
+"花瓣花萼尺寸能不能区分三种花"：
+1. 按品种分组算四个测量值的平均，列成表；
+2. 散点图：横轴瓣长、纵轴瓣宽，按品种上色；
+3. 相关性热力图，看哪些测量值关系最紧密；
+4. （进阶）4 变量两两组合的散点矩阵 pairplot；
+5. 告诉我哪些特征最能区分品种？哪两种最难分？
+
+图存为 PNG，中文标题、配色清爽。</div>
+      </div>
+      <div>
+        <div class="panel-label"><span class="dot"></span>预期产出 & 结论</div>
+        <p class="out">均值表 + 散点图 + 热力图 + 散点矩阵 + 结论：<b>花瓣长/宽最能区分品种；setosa 一眼可分，versicolor 与 virginica 有重叠、最难分</b>。</p>
+        <div class="tip" style="margin-top:14px"><span class="nl">两个新概念（大白话）：</span><b>相关性</b>=两个数一起变大变小的程度；<b>可分性/聚类</b>=同类的点在图上扎堆。好图让"能不能区分"一眼有答案。</div>
+      </div>
+    </div>
+    <div class="slide-num">28</div>
+  </section>
+
+  <!-- 29 综合练习 -->
+  <section class="slide">
+    <span class="kicker">综合动手练习 · 20 分钟</span>
+    <h2>用你自己的数据，跑一个最小闭环</h2>
+    <div class="flow" style="margin-top:10px">
+      <div class="step s1"><div class="n">读</div><div class="t" style="font-size:18px">数据体检</div><div class="d">套案例 1</div></div>
+      <div class="step s2"><div class="n">算 / 洗</div><div class="t" style="font-size:18px">统计或清洗</div><div class="d">套案例 2 / 3</div></div>
+      <div class="step s4"><div class="n">画</div><div class="t" style="font-size:18px">至少一张图</div><div class="d">套案例 5 + 一句洞察</div></div>
+    </div>
+    <div class="tip" style="margin-top:26px"><span class="nl">老师巡场：</span>重点看提示词够不够具体。最常见问题是<b>指令太笼统</b>——引导学员补上"要什么格式、存成什么文件、给我什么结论"。</div>
+    <p class="cap" style="margin-top:14px">没有数据？现场让 Claude 生成一份你感兴趣的主题数据即可。</p>
+    <div class="slide-num">29</div>
+  </section>
+
+  <!-- 30 总结 -->
+  <section class="slide">
+    <span class="kicker">课堂总结</span>
+    <h2>带走这四句话</h2>
+    <div class="grid4">
+      <div class="mc"><h3>🔁 一条主线</h3><p>读 → 算/洗 → 合 → 画 → 出结论。任何数据任务都能套进这五步。</p></div>
+      <div class="mc"><h3>🗣 提需求，不写代码</h3><p>你说清"要什么、什么格式、给我什么结论"，Claude 负责实现。</p></div>
+      <div class="mc"><h3>🔍 永远可核对</h3><p>清洗、合并要让 Claude 列出每处改动、报告丢失数据，绝不黑箱。</p></div>
+      <div class="mc"><h3>📂 留住产物</h3><p>每步都把结果存成新文件，方便复用，也方便出错时回溯。</p></div>
+    </div>
+    <div class="slide-num">30</div>
+  </section>
+
+  <!-- 31 课后练习 -->
+  <section class="slide">
+    <span class="kicker">课后练习</span>
+    <h2>三档难度，任选挑战</h2>
+    <ul class="big">
+      <li><span class="ic">易</span><b>基础题：</b>导出近三个月真实账单，做一次"数据体检"，并画出消费分类饼图。</li>
+      <li><span class="ic">中</span><b>进阶题：</b>找一份脏数据表，完整跑一遍清洗流程，把 Claude 的"清洗日志"截图记录。</li>
+      <li><span class="ic">难</span><b>挑战题：</b>仿照案例 7，为你关心的主题生成一份图文并茂的 Markdown 分析报告。</li>
+    </ul>
+    <div class="slide-num">31</div>
+  </section>
+
+  <!-- 32 结尾 -->
+  <section class="slide cover">
+    <span class="kicker">本节完 · 谢谢</span>
+    <h1>下节预告：<br>让分析流程"自动化"</h1>
+    <p class="lead">一次设置，以后每月一键生成报告 —— 把今天学的本事，交给 Claude 帮你自动跑。</p>
+    <div class="chips" style="margin-top:30px">
+      <span class="chip">有问题，现在提 🙋</span>
+      <span class="chip">别忘了完成课后练习 📂</span>
+    </div>
+    <div class="slide-foot">AI 系列课 · 第 6 课</div>
+    <div class="slide-num">32</div>
+  </section>
+
+</div>
+
+<div id="help">← → / 空格 翻页 &nbsp;·&nbsp; F 全屏 &nbsp;·&nbsp; Home 回首页</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;
+  const bar=document.getElementById('bar');
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    bar.style.width=((i+1)/slides.length*100)+'%';
+  }
+  function next(){show(i+1);} function prev(){show(i-1);}
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();next();}
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev();}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(slides.length-1);}
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement)document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  });
+  // click right half = next, left half = prev
+  document.getElementById('stage').addEventListener('click',e=>{
+    if(e.clientX > window.innerWidth/2) next(); else prev();
+  });
+  show(0);
+</script>
+</body>
+</html>
