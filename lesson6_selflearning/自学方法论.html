@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 时代自学方法论 · 5 套流程 + 十步法</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --ink-soft: #5b6472;
+    --line: #e6e9ef;
+    --brand: #d97757;
+    --brand-soft: #fbeee8;
+    --blue: #4a7bd6;
+    --blue-soft: #eaf1fb;
+    --green: #3f9e6b;
+    --green-soft: #e9f6ef;
+    --amber: #c98a1e;
+    --amber-soft: #fbf2e0;
+    --purple: #8a63c9;
+    --purple-soft: #f0eafb;
+    --code-bg: #2b303b;
+    --code-ink: #e6e9ef;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(20,28,45,.06), 0 8px 24px rgba(20,28,45,.05);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7; font-size: 16px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* Header */
+  header.hero {
+    background: linear-gradient(135deg, #fff 0%, #fdf6f2 100%);
+    border-bottom: 1px solid var(--line); padding: 48px 20px 40px;
+  }
+  .hero-inner { max-width: 920px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: .08em;
+    color: var(--brand); background: var(--brand-soft);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 16px;
+  }
+  h1 { font-size: 34px; line-height: 1.25; margin: 0 0 14px; letter-spacing: -.01em; }
+  .subtitle { color: var(--ink-soft); font-size: 17px; max-width: 720px; margin: 0; }
+  .lead-quote {
+    margin: 20px 0 0; padding: 14px 18px; background: #fff; border: 1px solid var(--line);
+    border-left: 3px solid var(--brand); border-radius: 10px; color: var(--ink); font-size: 15.5px;
+  }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: #fff;
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; color: var(--ink-soft);
+  }
+  .chip strong { color: var(--ink); font-weight: 600; }
+
+  /* Section titles */
+  h2.section {
+    font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700;
+    margin: 48px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--line);
+  }
+
+  /* Flow strip */
+  .flowstrip {
+    display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; margin: 18px 0;
+  }
+  .flowstrip .node { flex: 1 1 140px; text-align: center; padding: 12px 8px; border-radius: 10px; background: #fafbfd; border: 1px solid var(--line); }
+  .flowstrip .node .b { font-weight: 700; font-size: 15px; }
+  .flowstrip .node .s { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+  .flowstrip .arrow { align-self: center; color: var(--brand); font-weight: 700; }
+
+  /* Overview table */
+  .tbl-wrap { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  table.grid th { background: #f1f3f7; text-align: left; padding: 11px 16px; font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--line); }
+  table.grid td { padding: 11px 16px; border-bottom: 1px solid var(--line); color: var(--ink-soft); vertical-align: top; }
+  table.grid tr:last-child td { border-bottom: none; }
+  table.grid td strong { color: var(--ink); }
+
+  /* Flow card */
+  .case {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin: 22px 0; overflow: hidden;
+  }
+  .case-head { padding: 22px 26px 18px; border-bottom: 1px solid var(--line); }
+  .case-tags { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .badge { font-size: 12.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--ink); color: #fff; }
+  .lvl { font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+  .lvl-1 { background: var(--green-soft); color: var(--green); }
+  .lvl-2 { background: var(--blue-soft); color: var(--blue); }
+  .lvl-3 { background: var(--amber-soft); color: var(--amber); }
+  .lvl-4 { background: var(--brand-soft); color: var(--brand); }
+  .lvl-5 { background: var(--purple-soft); color: var(--purple); }
+  .case-head h3 { font-size: 21px; margin: 0; line-height: 1.35; }
+  .case-head .when { margin: 10px 0 0; font-size: 14px; color: var(--ink-soft); }
+  .case-head .when b { color: var(--ink); }
+
+  .case-body { padding: 8px 26px 26px; }
+  .field { margin-top: 22px; }
+  .field-label {
+    font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--ink-soft);
+    text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 7px;
+  }
+  .field-label .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+
+  ol.steps { margin: 0; padding-left: 0; list-style: none; counter-reset: s; }
+  ol.steps li { position: relative; padding: 7px 0 7px 38px; border-bottom: 1px dashed var(--line); counter-increment: s; font-size: 14.5px; }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 7px; width: 24px; height: 24px;
+    background: var(--brand-soft); color: var(--brand); border-radius: 50%;
+    font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps li b { color: var(--ink); }
+
+  .goal { margin-top: 20px; padding: 12px 16px; background: var(--green-soft); border-radius: 10px; font-size: 14.5px; color: #2c6b4a; }
+  .goal b { color: var(--green); }
+
+  /* Prompt block */
+  .prompt {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px; margin-top: 10px;
+    padding: 16px 18px; font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; position: relative;
+  }
+  .prompt .tag { position: absolute; top: 0; right: 0; background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-bottom-left-radius: 8px; letter-spacing: .05em; }
+
+  /* steps10 */
+  .ten { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px 26px 22px; }
+  .ten ol { margin: 0; padding-left: 0; list-style: none; counter-reset: t; }
+  .ten li { position: relative; padding: 13px 0 13px 44px; border-bottom: 1px solid var(--line); counter-increment: t; font-size: 15px; }
+  .ten li:last-child { border-bottom: none; }
+  .ten li::before {
+    content: counter(t); position: absolute; left: 0; top: 11px; width: 28px; height: 28px;
+    background: var(--ink); color: #fff; border-radius: 8px; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ten li b { color: var(--ink); }
+  .ten li span { color: var(--ink-soft); }
+
+  .callout { margin: 22px 0; padding: 18px 22px; background: var(--brand-soft); border-radius: var(--radius); border: 1px solid #f3d9cb; }
+  .callout .big { font-size: 18px; font-weight: 700; color: var(--ink); margin: 0 0 6px; }
+  .callout p { margin: 6px 0 0; color: #8a4f37; font-size: 15px; }
+
+  footer { text-align: center; color: var(--ink-soft); font-size: 13px; margin-top: 50px; }
+  @media (max-width: 600px){ h1{font-size:27px;} .case-body,.ten{padding-left:18px;padding-right:18px;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">第 6 课延伸 · 自学方法论</span>
+    <h1>AI 时代，如何自学一个领域里的「一个模块」</h1>
+    <p class="subtitle">不讲空泛原则，给出可直接照着执行的 5 套流程 + 一套综合十步法。适用：有基本 Claude 使用经验的成年人。</p>
+    <div class="lead-quote">用 AI 扩大输入，用问题驱动学习，用项目形成闭环，用输出验证理解，用迁移沉淀能力。</div>
+    <div class="meta-row">
+      <span class="chip"><strong>5</strong> 套核心流程</span>
+      <span class="chip"><strong>10</strong> 步综合法</span>
+      <span class="chip">配套 <strong>Prompt</strong> 模板</span>
+      <span class="chip">完整案例 · <strong>AI Agent 任务拆解</strong></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 主线 -->
+  <h2 class="section">一条主线</h2>
+  <div class="flowstrip">
+    <div class="node"><div class="b">建立结构</div><div class="s">地图</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="b">形成能力</div><div class="s">项目</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="b">解决真实问题</div><div class="s">问题树</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="b">验证理解</div><div class="s">费曼</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="b">沉淀判断力</div><div class="s">陪练</div></div>
+  </div>
+  <p style="color:var(--ink-soft);font-size:15px;">核心矛盾：AI 让「获取答案」极其廉价，但<strong style="color:var(--ink)">理解、判断、沉淀</strong>反而更难——容易产生「AI 做出来了 = 我学会了」的错觉。下面所有流程都在对抗这个错觉。</p>
+
+  <!-- 总览 -->
+  <h2 class="section">五套流程总览</h2>
+  <div class="tbl-wrap">
+    <table class="grid">
+      <thead><tr><th>流程</th><th>适合场景</th><th>核心目标</th><th>关键动作</th></tr></thead>
+      <tbody>
+        <tr><td><strong>一 · 地图式</strong></td><td>刚接触陌生模块</td><td>先建立整体认知</td><td>画地图、抓核心 20%</td></tr>
+        <tr><td><strong>二 · 项目驱动</strong></td><td>想快速学会并能用</td><td>用作品倒逼学习</td><td>做最小项目、卡点即学</td></tr>
+        <tr><td><strong>三 · 问题树</strong></td><td>为解决真实问题</td><td>从问题倒推知识</td><td>拆问题树、找关键节点</td></tr>
+        <tr><td><strong>四 · 费曼输出</strong></td><td>想真正讲清楚</td><td>用表达验证理解</td><td>讲给三类人、模拟提问</td></tr>
+        <tr><td><strong>五 · 专家陪练</strong></td><td>想从入门到高手</td><td>用 AI 当教练训练</td><td>诊断、追问、压力测试</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 流程一 -->
+  <h2 class="section">流程详解</h2>
+
+  <div class="case">
+    <div class="case-head">
+      <div class="case-tags"><span class="badge">流程 1</span><span class="lvl lvl-1">地图式自学</span></div>
+      <h3>先画地图，再进入细节</h3>
+      <p class="when"><b>适合：</b>刚进入陌生模块，不知从何开始（特征工程、项目管理、AI Agent、供应链…）。</p>
+    </div>
+    <div class="case-body">
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>执行步骤</div>
+        <ol class="steps">
+          <li><b>定义模块边界</b>：是什么 / 属于哪个领域 / 解决什么 / 不解决什么 / 与相邻模块的区别</li>
+          <li><b>建立三层知识地图</b>：概念层（术语原理）→ 方法层（流程工具）→ 应用层（案例场景）</li>
+          <li><b>找出核心 20%</b>：掌握哪些能解决 80% 的问题；哪些初学者可暂时跳过</li>
+          <li><b>做概念对比</b>：易混淆概念对，列「定义/相同点/不同点/适用场景/误区」</li>
+          <li><b>建立最小理解闭环</b>：立刻拿一个真实小例子做一次操作（如把小项目拆成任务表）</li>
+          <li><b>沉淀一页纸</b>：定义、位置、核心概念、关键方法、误区、案例、可解决的问题、下一步</li>
+        </ol>
+      </div>
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>关键 Prompt</div>
+        <div class="prompt"><span class="tag">PROMPT</span>我想自学【某领域】中的【某模块】。请帮我建立知识地图：
+1. 它在整个领域中的位置   2. 主要解决什么问题
+3. 前置知识   4. 核心概念   5. 与相邻模块的区别
+6. 常见应用场景   7. 学完后应具备什么能力</div>
+      </div>
+      <div class="goal"><b>目标：</b>从完全陌生 → 建立清晰认知框架。</div>
+    </div>
+  </div>
+
+  <!-- 流程二 -->
+  <div class="case">
+    <div class="case-head">
+      <div class="case-tags"><span class="badge">流程 2</span><span class="lvl lvl-2">项目驱动自学</span></div>
+      <h3>不要学完再做，而是在做中学</h3>
+      <p class="when"><b>适合：</b>不想只学理论，想快速做出东西（AI 工具、数据分析、网页、投资模型）。</p>
+    </div>
+    <div class="case-body">
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>执行步骤</div>
+        <ol class="steps">
+          <li><b>选一个最小项目</b>：1–3 天完成初版。标准：足够小 / 有明确输入输出 / 能验证 / 贴近真实</li>
+          <li><b>倒推知识清单</b>：问「完成这个项目需要哪些知识」，而不是「我要学什么」</li>
+          <li><b>拆成 5 个小里程碑</b>：M1 需求 → M2 Prompt → M3 界面 → M4 接口 → M5 部署</li>
+          <li><b>卡点即时学习</b>：遇到卡点再精准学习，避免陷入资料收集</li>
+          <li><b>每个卡点做知识卡片</b>：卡点 / 原因 / 解决方法 / 关键代码或步骤 / 以后怎么办</li>
+          <li><b>做复盘</b>：哪些是 AI 做的、哪些我真懂了、下次能否独立完成 60%</li>
+        </ol>
+      </div>
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>关键 Prompt</div>
+        <div class="prompt"><span class="tag">PROMPT</span>我想通过做一个【项目名称】来自学【某模块】。请帮我倒推：
+1. 需要掌握的知识点   2. 每个知识点的优先级
+3. 哪些必须先学   4. 哪些可边做边查   5. 哪些可暂时跳过
+6. 推荐的最小实现路径</div>
+      </div>
+      <div class="goal"><b>核心判断：</b>始终自问——「这是 AI 做出来的，还是我理解后做出来的？」 <b>目标：</b>从「知道」变成「能做」。</div>
+    </div>
+  </div>
+
+  <!-- 流程三 -->
+  <div class="case">
+    <div class="case-head">
+      <div class="case-tags"><span class="badge">流程 3</span><span class="lvl lvl-3">问题树自学</span></div>
+      <h3>不从知识出发，而从问题出发</h3>
+      <p class="when"><b>适合：</b>为解决真实业务问题（用项目系统替代 Excel、判断一个项目是否值得投）。</p>
+    </div>
+    <div class="case-body">
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>执行步骤</div>
+        <ol class="steps">
+          <li><b>定义真实问题</b>：要有真实场景 / 明确痛点 / 可验证结果 / 决策价值</li>
+          <li><b>搭建问题树</b>：把大问题拆成一级 / 二级 / 三级问题</li>
+          <li><b>把问题映射为知识点</b>：每个问题对应要学的知识模块</li>
+          <li><b>优先解决最关键节点</b>：找出最关键的 3 个节点，先解决它们</li>
+          <li><b>形成方案草稿</b>：现状/收益/对象/工具/试点/分工/规则/复盘/风险/行动</li>
+          <li><b>用 AI 做反方质疑</b>：让 AI 扮演反对者提 10 条意见，再逐条回应</li>
+        </ol>
+      </div>
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>关键 Prompt</div>
+        <div class="prompt"><span class="tag">PROMPT</span>请把【我要解决的问题】拆成一棵问题树：
+1. 从业务目标开始   2. 拆成一/二/三级问题
+3. 标注每个问题需学习的知识模块
+4. 标注最关键的问题   5. 给出学习顺序</div>
+      </div>
+      <div class="goal"><b>目标：</b>为解决真实业务问题而学习。</div>
+    </div>
+  </div>
+
+  <!-- 流程四 -->
+  <div class="case">
+    <div class="case-head">
+      <div class="case-tags"><span class="badge">流程 4</span><span class="lvl lvl-4">费曼输出自学</span></div>
+      <h3>能讲出来，才是真的懂</h3>
+      <p class="when"><b>适合：</b>想讲清楚、教别人、写文章、做分享、给老板汇报。</p>
+    </div>
+    <div class="case-body">
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>执行步骤</div>
+        <ol class="steps">
+          <li><b>选一个具体模块</b>：越小越好（✗「我要讲 AI」→ ✓「用 Prompt 做深度阅读」）</li>
+          <li><b>用三种对象各讲一遍</b>：小学生（是否真懂）/ 同行（专业准确）/ 老板（商业价值）</li>
+          <li><b>用四段结构表达</b>：是什么 / 为什么重要 / 怎么用 / 边界与误区</li>
+          <li><b>加入例子和反例</b>：生活化例子 + 商业例子 + 反例 + 易误解场景</li>
+          <li><b>模拟听众提问</b>：让 AI 扮演小白/专家/老板/反对同事各提 5 个问题</li>
+          <li><b>形成 10 分钟分享稿</b>：标题/开场/重要性/核心/案例/误区/应用/一句话总结</li>
+        </ol>
+      </div>
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>关键 Prompt</div>
+        <div class="prompt"><span class="tag">PROMPT</span>请为【某知识点】生成：
+1. 一个生活化例子   2. 一个商业例子   3. 一个反例
+4. 一个容易误解的场景   5. 一个适合讲给老板的表达</div>
+      </div>
+      <div class="goal"><b>目标：</b>从「我懂了」变成「我能讲清楚」。</div>
+    </div>
+  </div>
+
+  <!-- 流程五 -->
+  <div class="case">
+    <div class="case-head">
+      <div class="case-tags"><span class="badge">流程 5</span><span class="lvl lvl-5">专家陪练自学</span></div>
+      <h3>让 AI 不只是解释器，而是教练、考官、反方</h3>
+      <p class="when"><b>适合：</b>已入门、想持续提高（投资判断、AI 产品设计、交易策略、商业分析）。</p>
+    </div>
+    <div class="case-body">
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>执行步骤</div>
+        <ol class="steps">
+          <li><b>设定 AI 角色</b>：入门老师 / 专家顾问 / 反方质疑者 / 案例教练 / 考官</li>
+          <li><b>先做诊断测试</b>：10 道由易到难的题，判断水平并指出漏洞</li>
+          <li><b>苏格拉底式追问</b>：每次只问一个问题，回答后指出对错，再问更深的</li>
+          <li><b>案例推演</b>：给一个真实复杂案例，你先判断，再让 AI 批改</li>
+          <li><b>反方压力测试</b>：让 AI 当挑剔专家，找逻辑漏洞/过度假设/风险遗漏</li>
+          <li><b>建立能力评分表</b>：概念/工具/案例/风险/表达/迁移（1–5 分）</li>
+          <li><b>阶段复盘</b>：已掌握什么 / 最大 3 个漏洞 / 哪些是假懂 / 下阶段练什么</li>
+        </ol>
+      </div>
+      <div class="field">
+        <div class="field-label"><span class="dot"></span>关键 Prompt</div>
+        <div class="prompt"><span class="tag">PROMPT</span>请用苏格拉底式教学法训练我【某模块】。每次只问一个问题，
+我回答后你指出哪里对、哪里不完整、哪里有误区，
+然后问下一个更深入的问题。</div>
+      </div>
+      <div class="goal"><b>目标：</b>从「会用」走向「有判断力」。</div>
+    </div>
+  </div>
+
+  <!-- 如何选择 -->
+  <h2 class="section">如何选择 / 组合</h2>
+  <div class="tbl-wrap">
+    <table class="grid">
+      <thead><tr><th>你的目标</th><th>推荐流程</th></tr></thead>
+      <tbody>
+        <tr><td>完全陌生，先入门</td><td><strong>地图式</strong></td></tr>
+        <tr><td>想快速做出东西</td><td><strong>项目驱动</strong></td></tr>
+        <tr><td>解决工作中的真实问题</td><td><strong>问题树</strong></td></tr>
+        <tr><td>想讲课 / 写文章 / 汇报</td><td><strong>费曼输出</strong></td></tr>
+        <tr><td>想训练专家级判断力</td><td><strong>专家陪练</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <p class="big">推荐配方</p>
+    <p>地图式（建结构）+ 项目驱动（成能力）+ 问题树（解真实问题）+ 费曼输出（验证理解）+ 专家陪练（练判断力）。</p>
+  </div>
+
+  <!-- 十步法 -->
+  <h2 class="section">综合流程 · 自学模块「十步法」</h2>
+  <p style="color:var(--ink-soft);font-size:15px;margin-top:0;">如果只保留一套，用这套——把五套流程的精华串成一条完整闭环。</p>
+  <div class="ten">
+    <ol>
+      <li><b>定位模块</b> <span>· 属于哪个领域 / 解决什么问题 / 为什么值得学</span></li>
+      <li><b>建立地图</b> <span>· 核心概念 / 前置知识 / 方法体系 / 应用场景</span></li>
+      <li><b>抓核心 20%</b> <span>· 最重要的 20% / 先学什么 / 暂不学什么</span></li>
+      <li><b>做概念对比</b> <span>· 相似概念 / 边界 / 常见误区</span></li>
+      <li><b>选最小项目或真实问题</b> <span>· 能否 1–3 天完成一个最小闭环</span></li>
+      <li><b>边做边学</b> <span>· 遇卡点再查，不陷入资料收集</span></li>
+      <li><b>让 AI 反向追问</b> <span>· 不直接给答案，连续提问检查是否真懂</span></li>
+      <li><b>做反例和边界训练</b> <span>· 何时不适用 / 错误用法 / 失败案例</span></li>
+      <li><b>输出一页纸</b> <span>· 定义 / 价值 / 方法 / 案例 / 误区 / 应用</span></li>
+      <li><b>迁移到真实场景</b> <span>· 能否形成模板 / 工具 / 流程 / 方法论</span></li>
+    </ol>
+  </div>
+
+  <!-- 完整案例 -->
+  <h2 class="section">完整案例 · 自学「AI Agent 中的任务拆解模块」</h2>
+  <div class="tbl-wrap">
+    <table class="grid">
+      <thead><tr><th>步骤</th><th>执行内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 定位</strong></td><td>领域 AI Agent；模块 任务拆解；解决「把复杂目标拆成可执行步骤」</td></tr>
+        <tr><td><strong>2 地图</strong></td><td>前置：Prompt/工作流/工具调用/上下文；核心：Goal/Task/Subtask/Plan/Tool/Feedback；方法：CoT / Plan-and-Execute / ReAct</td></tr>
+        <tr><td><strong>3 核心 20%</strong></td><td>目标定义 → 任务拆解 → 步骤排序 → 工具匹配 → 执行反馈</td></tr>
+        <tr><td><strong>4 对比</strong></td><td>Prompt（一次性）/ Workflow（固定流程）/ Agent（动态规划行动）</td></tr>
+        <tr><td><strong>5 最小项目</strong></td><td>做一个「AI 学习计划生成器」：输入领域+模块 → 输出学习地图、7 天计划、练习、测试题</td></tr>
+        <tr><td><strong>6 边做边学</strong></td><td>输出混乱→学结构化 Prompt；计划不合理→学拆解原则；无法检查→学评估指标</td></tr>
+        <tr><td><strong>7 AI 追问</strong></td><td>为什么这样拆？前置条件？哪步最易失败？只有 2 小时怎么压缩？</td></tr>
+        <tr><td><strong>8 反例</strong></td><td>目标太大 / 步骤不清 / 没顺序 / 没验证标准 / 没反馈机制</td></tr>
+        <tr><td><strong>9 一页纸</strong></td><td>定义、价值、方法链、误区、应用一页沉淀</td></tr>
+        <tr><td><strong>10 迁移</strong></td><td>迁移到项目管理拆任务、投研框架、教学路径、读书拆解</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 总结 -->
+  <div class="callout" style="margin-top:40px;">
+    <p class="big">一句话总结</p>
+    <p style="font-size:16px;">先建地图，再抓核心；先做闭环，再问边界；先讲出来，再迁移到真实场景。</p>
+  </div>
+
+  <footer>第 6 课延伸 · AI 时代自学方法论 · 配套文件 spec.md</footer>
+</div>
+</body>
+</html>
