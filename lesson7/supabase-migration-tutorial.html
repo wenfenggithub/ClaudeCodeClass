@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>从 JSON 文件迁移到 Supabase · 小白教程</title>
+    <style>
+      :root {
+        --bg: #f5f5f7;        /* Apple light gray */
+        --bg2: #ffffff;
+        --card: #ffffff;
+        --ink: #1d1d1f;       /* Apple near-black */
+        --muted: #6e6e73;     /* Apple secondary gray */
+        --brand: #0071e3;     /* Apple blue */
+        --brand2: #0071e3;
+        --accent: #34c759;    /* Apple green */
+        --warn: #ff9f0a;      /* Apple orange */
+        --danger: #ff3b30;    /* Apple red */
+        --code-bg: #f5f5f7;
+        --code-ink: #1d1d1f;
+        --line: #e8e8ed;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
+      body {
+        font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .deck {
+        width: min(1100px, 94vw);
+        height: min(680px, 90vh);
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        background: var(--card);
+        border-radius: 28px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(0,0,0,0.04);
+        padding: 54px 60px 70px;
+        overflow-y: auto;
+        display: none;
+        flex-direction: column;
+      }
+      .slide.active { display: flex; animation: fade 0.4s cubic-bezier(0.22,1,0.36,1); }
+      @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--brand);
+        margin-bottom: 14px;
+      }
+      h1 { font-size: 44px; line-height: 1.1; margin-bottom: 16px; font-weight: 700; letter-spacing: -0.02em; }
+      h2 { font-size: 32px; line-height: 1.2; margin-bottom: 20px; font-weight: 700; letter-spacing: -0.02em; }
+      h3 { font-size: 19px; margin: 18px 0 8px; color: var(--ink); font-weight: 600; }
+      p { font-size: 17px; line-height: 1.7; color: var(--ink); margin-bottom: 12px; }
+      .muted { color: var(--muted); }
+      ul, ol { margin: 6px 0 12px 22px; }
+      li { font-size: 16.5px; line-height: 1.75; margin-bottom: 8px; }
+      strong { color: #1d1d1f; font-weight: 600; }
+      .tag {
+        display: inline-block; padding: 3px 10px; border-radius: 999px;
+        font-size: 12px; font-weight: 600; letter-spacing: .04em;
+        background: rgba(0,113,227,.1); color: var(--brand); margin-left: 8px;
+      }
+
+      .cover {
+        background: linear-gradient(180deg, #fbfbfd 0%, #f0f0f4 100%);
+        color: var(--ink); justify-content: center;
+      }
+      .cover h1 { font-size: 56px; color: var(--ink); letter-spacing: -0.03em; }
+      .cover p { color: var(--muted); font-size: 19px; }
+      .cover .pill {
+        align-self: flex-start; margin-bottom: 22px;
+        background: rgba(0,113,227,.1); color: var(--brand);
+        padding: 8px 16px; border-radius: 999px; font-weight: 600; letter-spacing:.02em;
+      }
+
+      code, pre { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+      p code, li code {
+        background: #f0f0f3; color: #bf2d8a; padding: 2px 7px; border-radius: 6px; font-size: 14px;
+      }
+      pre {
+        background: var(--code-bg); color: var(--code-ink);
+        border-radius: 14px; padding: 16px 18px; font-size: 13.5px; line-height: 1.6;
+        border: 1px solid var(--line);
+        overflow-x: auto; margin: 10px 0; white-space: pre;
+      }
+      pre .c { color: #6e6e73; }   /* comment */
+      pre .k { color: #ad3da4; }   /* keyword */
+      pre .s { color: #c4271b; }   /* string */
+      pre .f { color: #0b7285; }   /* function/type */
+      pre .n { color: #1c6fd6; }   /* number/ident */
+
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .col h3 { margin-top: 0; }
+      .badge-before, .badge-after {
+        font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; letter-spacing:.02em;
+      }
+      .badge-before { background: #fff0ef; color: #d70015; }
+      .badge-after { background: #e8f8ed; color: #1a8a3e; }
+
+      .callout {
+        border-left: 3px solid var(--brand); background: #f0f6ff;
+        padding: 12px 16px; border-radius: 10px; margin: 12px 0; font-size: 15.5px;
+      }
+      .callout.warn { border-color: var(--warn); background: #fff7ec; }
+      .callout.danger { border-color: var(--danger); background: #fff0ef; }
+      .callout p { margin: 0; font-size: 15.5px; }
+
+      table.schema { border-collapse: collapse; width: 100%; margin: 8px 0 12px; font-size: 14.5px; }
+      table.schema th, table.schema td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; }
+      table.schema th { background: #f5f5f7; color: var(--muted); font-weight: 600; }
+      table.schema td code { background: #f0f0f3; }
+
+      .agenda { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 26px; margin-top: 8px; }
+      .agenda .item { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; }
+      .agenda .num {
+        flex: none; width: 30px; height: 30px; border-radius: 8px; background: rgba(0,113,227,.1);
+        color: var(--brand); font-weight: 700; display: grid; place-items: center; font-size: 14px;
+      }
+
+      .flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+      .flow .box {
+        background: #f5f5f7; border: 1px solid var(--line); border-radius: 10px;
+        padding: 10px 14px; font-size: 14px; font-weight: 500;
+      }
+      .flow .arrow { color: var(--brand); font-weight: 700; }
+
+      /* 架构对比图 */
+      .arch { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 6px 0 4px; }
+      .arch .stack {
+        border-radius: 16px; padding: 16px 16px 18px; border: 1px solid var(--line);
+      }
+      .arch .stack.before { background: #fdf6f5; border-color: #f3dedb; }
+      .arch .stack.after { background: #f1f7ff; border-color: #d9e7fb; }
+      .arch .stack h3 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+      .arch .layer {
+        background: #fff; border: 1px solid var(--line); border-radius: 10px;
+        padding: 9px 12px; font-size: 13.5px; font-weight: 500; text-align: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,.03);
+      }
+      .arch .layer small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+      .arch .down { text-align: center; color: var(--muted); font-size: 13px; margin: 5px 0; }
+      .arch .cloud { border-style: dashed; border-color: var(--brand); background: #eaf3ff; }
+      .arch .disk { border-style: dashed; border-color: #e0857a; background: #fbeae7; }
+
+      footer {
+        position: absolute; left: 60px; right: 60px; bottom: 22px;
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 13px; color: var(--muted);
+      }
+      .progress { height: 4px; background: var(--line); border-radius: 2px; flex: 1; margin: 0 18px; overflow: hidden; }
+      .progress > i { display: block; height: 100%; background: var(--brand); width: 0; transition: width .3s; }
+
+      .nav {
+        position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 10px; z-index: 50;
+      }
+      .nav button {
+        background: rgba(255,255,255,.8); color: var(--ink); border: 1px solid var(--line);
+        border-radius: 980px; padding: 8px 18px; font-size: 14px; font-weight: 500; cursor: pointer;
+        backdrop-filter: blur(12px); box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      }
+      .nav button:hover { background: #fff; color: var(--brand); }
+      .hint { position: fixed; top: 16px; right: 20px; color: var(--muted); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="deck" id="deck">
+
+      <!-- 1 -->
+      <section class="slide cover active">
+        <span class="pill">图书投票项目 · 实战教程</span>
+        <h1>从 JSON 文件<br />迁移到 Supabase 数据库</h1>
+        <p>一份给「数据库零基础」的人看的、照着抄就能成功的迁移指南</p>
+        <p class="muted" id="coverCount" style="margin-top:18px;font-size:15px;">用 ← / → 键翻页</p>
+      </section>
+
+      <!-- 2 架构对比 -->
+      <section class="slide">
+        <div class="eyebrow">迁移前后 · 架构对比</div>
+        <h2>这次迁移，到底改了什么</h2>
+        <div class="arch">
+          <div class="stack before">
+            <h3>🗂️ 现在 · 文件型架构</h3>
+            <div class="layer">浏览器前端<small>public/ 的 HTML / app.js（不变）</small></div>
+            <div class="down">↓ HTTP 请求</div>
+            <div class="layer">Express 后端 server.js<small>fs.readFile / writeFile 读写文件</small></div>
+            <div class="down">↓ 本机磁盘读写</div>
+            <div class="layer disk">data/*.json<small>book / vote / user / settings（与代码同机）</small></div>
+          </div>
+          <div class="stack after">
+            <h3>☁️ 迁移后 · Supabase 架构</h3>
+            <div class="layer">浏览器前端<small>public/ 的 HTML / app.js（不变）</small></div>
+            <div class="down">↓ HTTP 请求</div>
+            <div class="layer">Express 后端 server.js<small>@supabase/supabase-js 发数据库查询</small></div>
+            <div class="down">↓ 网络（HTTPS）</div>
+            <div class="layer cloud">Supabase 云 · PostgreSQL<small>books / votes / users / settings 表（独立托管）</small></div>
+          </div>
+        </div>
+        <p class="muted" style="font-size:14px;margin-top:6px;">👉 前端零改动，只有「后端如何存取数据」这一层被替换。</p>
+      </section>
+
+      <!-- 3 架构对比表 -->
+      <section class="slide">
+        <div class="eyebrow">迁移前后 · 逐项对比</div>
+        <h2>关键维度，一张表看懂</h2>
+        <table class="schema">
+          <tr><th>维度</th><th><span class="badge-before">现在 · JSON 文件</span></th><th><span class="badge-after">迁移后 · Supabase</span></th></tr>
+          <tr><td><strong>数据存在哪</strong></td><td>项目里的 <code>data/*.json</code>，和代码同一台机器</td><td>Supabase 云端 PostgreSQL，独立托管</td></tr>
+          <tr><td><strong>怎么读写</strong></td><td><code>fs.readFile</code> / <code>writeFile</code> 整文件读写</td><td>SQL / <code>supabase.from().select()</code> 按需查询</td></tr>
+          <tr><td><strong>并发投票</strong></td><td>读改写有竞态，可能<strong>丢票</strong></td><td>数据库保证一致性，<strong>不丢票</strong></td></tr>
+          <tr><td><strong>统计票数</strong></td><td>读出全部、用 JS 手动累加</td><td>一句 <code>count(*)</code> 现算，永远准确</td></tr>
+          <tr><td><strong>查询 / 筛选</strong></td><td>全量加载到内存再过滤</td><td>数据库直接 <code>where</code> 过滤，快</td></tr>
+          <tr><td><strong>数据安全</strong></td><td>误删文件即丢失，无版本</td><td>云端自动备份，可恢复</td></tr>
+          <tr><td><strong>多台服务器</strong></td><td>各读各的文件，数据不共享</td><td>共用一个数据库，天然共享</td></tr>
+          <tr><td><strong>可视化管理</strong></td><td>只能手动开文本编辑器看</td><td>网页后台 Table Editor 看 / 改</td></tr>
+        </table>
+        <div class="callout"><p>💡 一句话：<strong>把「藏在项目文件夹里的 Excel」升级成「专业的在线数据库」</strong>，更稳、更快、更好管。</p></div>
+      </section>
+
+      <!-- 2 目录 -->
+      <section class="slide">
+        <div class="eyebrow">Agenda · 我们会做什么</div>
+        <h2>教程目录</h2>
+        <div class="agenda">
+          <div class="item"><span class="num">1</span><span><strong>概念扫盲</strong>：Supabase 是什么、为什么迁移</span></div>
+          <div class="item"><span class="num">2</span><span><strong>注册建库</strong>：开账号、建项目、找连接信息</span></div>
+          <div class="item"><span class="num">3</span><span><strong>设计表</strong>：4 个 JSON → 4 张表 + 建表 SQL</span></div>
+          <div class="item"><span class="num">4</span><span><strong>导数据</strong>：把现有数据搬进数据库</span></div>
+          <div class="item"><span class="num">5</span><span><strong>改代码</strong>：Node 后端读写从文件改成数据库</span></div>
+          <div class="item"><span class="num">6</span><span><strong>安全</strong>：密钥、.env、RLS</span></div>
+          <div class="item"><span class="num">7</span><span><strong>验证</strong>：确认数据对、功能正常</span></div>
+          <div class="item"><span class="num">8</span><span><strong>排坑</strong>：常见报错与解决</span></div>
+        </div>
+        <div class="callout"><p>👉 全程不需要你已经懂 SQL。每个术语第一次出现都会用一句话解释。</p></div>
+      </section>
+
+      <!-- 3 现状 -->
+      <section class="slide">
+        <div class="eyebrow">概念 1/3 · 你现在的存储方式</div>
+        <h2>你现在用的是「文件型数据库」</h2>
+        <p>你的项目把数据存成了 4 个 JSON 文本文件，放在 <code>data/</code> 文件夹里：</p>
+        <table class="schema">
+          <tr><th>文件</th><th>存什么</th><th>结构</th></tr>
+          <tr><td><code>book.json</code></td><td>5 本图书</td><td>数组，每项有 id/title/author/description/cover</td></tr>
+          <tr><td><code>vote.json</code></td><td>投票记录</td><td>对象，按 bookId 存 count 和 records 列表</td></tr>
+          <tr><td><code>user.json</code></td><td>注册用户</td><td>数组，含密码哈希、salt、isAdmin</td></tr>
+          <tr><td><code>settings.json</code></td><td>投票规则</td><td>单个对象，voteMode 等</td></tr>
+        </table>
+        <p>后端 <code>server.js</code> 每次都用 <code>fs.readFile</code> / <code>fs.writeFile</code> 读写这些文件。</p>
+        <div class="callout warn"><p>⚠️ 痛点：两个人同时投票时，可能「同时读、同时写」，后写的覆盖前写的 → <strong>丢票</strong>。文件还不好做查询、统计、备份。</p></div>
+      </section>
+
+      <!-- 4 什么是 supabase -->
+      <section class="slide">
+        <div class="eyebrow">概念 2/3 · Supabase 是什么</div>
+        <h2>Supabase = 云上的 PostgreSQL + 一套工具</h2>
+        <p><strong>数据库（Database）</strong>：专门存数据的软件，支持多人同时安全读写、复杂查询、自动备份。</p>
+        <p><strong>PostgreSQL</strong>：业界最流行的开源数据库之一（简称 Postgres）。</p>
+        <p><strong>Supabase</strong>：把 Postgres 搬到云上，帮你托管，还附赠了网页管理后台、自动生成的 API、用户认证等。你不用自己装数据库、不用买服务器。</p>
+        <div class="callout"><p>类比：JSON 文件像「记在记事本上的 Excel」；Supabase 像「公司共用的、有权限和锁的在线数据库系统」。</p></div>
+        <p class="muted">它有免费额度，做这个练习项目完全够用。</p>
+      </section>
+
+      <!-- 5 为什么迁移 -->
+      <section class="slide">
+        <div class="eyebrow">概念 3/3 · 为什么要迁移</div>
+        <h2>迁移后能解决什么</h2>
+        <div class="grid2">
+          <div class="col">
+            <h3><span class="badge-before">现在 · JSON 文件</span></h3>
+            <ul>
+              <li>并发投票可能丢数据</li>
+              <li>统计/排序要自己写代码</li>
+              <li>数据和代码混在一起，不好备份</li>
+              <li>多台服务器无法共享数据</li>
+            </ul>
+          </div>
+          <div class="col">
+            <h3><span class="badge-after">迁移后 · Supabase</span></h3>
+            <ul>
+              <li>数据库帮你处理并发，不丢票</li>
+              <li>一条 SQL 就能统计票数</li>
+              <li>数据独立托管，自动备份</li>
+              <li>网页后台可视化看数据、改数据</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout"><p>本教程的目标：<strong>数据搬进 Supabase，后端代码从「读写文件」改成「读写数据库」，前端完全不用动。</strong></p></div>
+      </section>
+
+      <!-- 6 注册 -->
+      <section class="slide">
+        <div class="eyebrow">第 2 步 · 注册账号</div>
+        <h2>注册 Supabase 账号</h2>
+        <ol>
+          <li>浏览器打开 <code>https://supabase.com</code></li>
+          <li>点右上角 <strong>Start your project</strong>（开始你的项目）</li>
+          <li>用 <strong>GitHub 账号</strong>或邮箱登录（推荐 GitHub，最省事）</li>
+          <li>首次登录会让你创建一个 <strong>Organization（组织）</strong>，名字随便填，比如 <code>my-org</code>，选 Free 免费套餐</li>
+        </ol>
+        <div class="callout"><p>✅ <strong>你应该看到：</strong>登录后进入一个叫 <em>Dashboard（仪表盘）</em>的控制台页面，左边是菜单，中间提示你「New project」。</p></div>
+      </section>
+
+      <!-- 7 建项目 -->
+      <section class="slide">
+        <div class="eyebrow">第 2 步 · 创建项目</div>
+        <h2>新建一个项目（Project）</h2>
+        <ol>
+          <li>点 <strong>New project</strong></li>
+          <li><strong>Name</strong>（项目名）：填 <code>vote-book</code></li>
+          <li><strong>Database Password</strong>（数据库密码）：点 Generate 自动生成一个，<strong>务必复制保存到记事本</strong>，以后连数据库要用</li>
+          <li><strong>Region</strong>（地区）：选离你近的，比如 <em>Southeast Asia (Singapore)</em></li>
+          <li>点 <strong>Create new project</strong>，等待约 1–2 分钟初始化</li>
+        </ol>
+        <div class="callout warn"><p>⚠️ 那个数据库密码<strong>只显示一次</strong>。没存下来也没关系，后面可以在设置里重置。</p></div>
+      </section>
+
+      <!-- 8 连接信息 -->
+      <section class="slide">
+        <div class="eyebrow">第 2 步 · 找到连接信息（2025 新版界面）</div>
+        <h2>最快：用顶部「Connect」按钮</h2>
+        <p>Supabase 2025 改版后，连接信息集中到了一个对话框，一次拿全：</p>
+        <ol>
+          <li>进入项目后，看<strong>页面顶部</strong>（项目名旁边）的绿色 <strong>Connect</strong> 按钮，点它</li>
+          <li>选 <strong>App Frameworks</strong> 选项卡</li>
+          <li>这里同时显示 <strong>Project URL</strong> 和对应的 <strong>API Key</strong>，直接复制</li>
+        </ol>
+        <h3>或者走设置页（路径也变了）</h3>
+        <table class="schema">
+          <tr><th>要找的</th><th>新位置</th><th>样子</th></tr>
+          <tr><td><strong>Project URL</strong></td><td>Settings ⚙️ → <strong>Data API</strong></td><td><code>https://xxxx.supabase.co</code></td></tr>
+          <tr><td><strong>API Key</strong></td><td>Settings ⚙️ → <strong>API Keys</strong>（单独标签页）</td><td><code>sb_secret_...</code></td></tr>
+        </table>
+        <div class="callout warn"><p>⚠️ 注意：URL 和 Key 现在<strong>分在两个地方</strong>了，不再像旧教程那样同一页。所以你在旧的「API」页找不到 Project URL 是正常的。</p></div>
+      </section>
+
+      <!-- 8b Key 新体系 -->
+      <section class="slide">
+        <div class="eyebrow">第 2 步 · 看懂新版 Key</div>
+        <h2>Key 换体系了：用哪一个？</h2>
+        <p>旧教程里的 <code>anon</code> / <code>service_role</code> 已被新 Key 取代（旧的仍能用，但官方计划 2026 年底弃用）：</p>
+        <table class="schema">
+          <tr><th>新 Key</th><th>对应旧 Key</th><th>用途</th><th>本项目用？</th></tr>
+          <tr><td><strong>Publishable key</strong><br /><code>sb_publishable_...</code></td><td>anon public</td><td>前端 / 客户端</td><td>❌</td></tr>
+          <tr><td><strong>Secret key</strong><br /><code>sb_secret_...</code></td><td>service_role</td><td>🔒 后端 / 服务端</td><td>✅ 用这个</td></tr>
+        </table>
+        <p>我们这个项目所有数据库操作都在<strong>后端</strong>，所以复制 <strong>Secret key（<code>sb_secret_...</code>）</strong>，填到后面 <code>.env</code> 的 <code>SUPABASE_SERVICE_KEY</code> 里即可。</p>
+        <div class="callout danger"><p>🔒 <strong>Secret key 权限极大：绝不能泄露、绝不能放进前端、绝不能提交到 Git。</strong>找不到新 Key 时，可在 <em>API Keys</em> 页点 <em>Create new API keys</em> 生成。</p></div>
+      </section>
+
+      <!-- 9 表设计概览 -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 设计表</div>
+        <h2>4 个 JSON 文件 → 4 张表</h2>
+        <p>数据库里的「表（Table）」就像一张 Excel 表格：<strong>列（字段）</strong>是表头，<strong>行</strong>是一条条记录。</p>
+        <div class="flow">
+          <span class="box">book.json</span><span class="arrow">→</span><span class="box">books 表</span>
+          <span class="box">user.json</span><span class="arrow">→</span><span class="box">users 表</span>
+        </div>
+        <div class="flow">
+          <span class="box">vote.json</span><span class="arrow">→</span><span class="box">votes 表（重点改造）</span>
+          <span class="box">settings.json</span><span class="arrow">→</span><span class="box">settings 表</span>
+        </div>
+        <div class="callout"><p>最大变化在 <strong>votes</strong>：原来一本书的所有投票挤在一个对象里；数据库里我们让<strong>「一次投票 = 一行」</strong>，更清晰、不会丢、好统计。票数用 <code>COUNT()</code> 现算。</p></div>
+      </section>
+
+      <!-- 10 books 表 -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 表结构</div>
+        <h2>books 表</h2>
+        <table class="schema">
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>id</code></td><td><code>text</code> 主键</td><td>沿用原来的 <code>book-001</code></td></tr>
+          <tr><td><code>title</code></td><td><code>text</code></td><td>书名</td></tr>
+          <tr><td><code>author</code></td><td><code>text</code></td><td>作者</td></tr>
+          <tr><td><code>description</code></td><td><code>text</code></td><td>简介</td></tr>
+          <tr><td><code>cover</code></td><td><code>text</code></td><td>封面地址（可空）</td></tr>
+        </table>
+        <p class="muted"><strong>主键（Primary Key）</strong>：每行的唯一身份证，不能重复。这里用书的 id。</p>
+      </section>
+
+      <!-- 11 users 表 -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 表结构</div>
+        <h2>users 表</h2>
+        <table class="schema">
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>id</code></td><td><code>text</code> 主键</td><td>原来的 <code>user-xxxx</code></td></tr>
+          <tr><td><code>username</code></td><td><code>text</code> 唯一</td><td>用户名，不可重复</td></tr>
+          <tr><td><code>password_hash</code></td><td><code>text</code></td><td>密码哈希（不存明文）</td></tr>
+          <tr><td><code>salt</code></td><td><code>text</code></td><td>加盐值</td></tr>
+          <tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td>注册时间</td></tr>
+          <tr><td><code>is_admin</code></td><td><code>boolean</code></td><td>是否管理员，默认 false</td></tr>
+        </table>
+        <div class="callout"><p>💡 字段名用<strong>下划线小写</strong>（<code>password_hash</code>）是数据库习惯。代码里 JS 是 <code>passwordHash</code>，迁移时做个对应即可。</p></div>
+      </section>
+
+      <!-- 12 votes 表 -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 表结构（重点）</div>
+        <h2>votes 表：一次投票一行</h2>
+        <table class="schema">
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>id</code></td><td><code>bigint</code> 自增主键</td><td>数据库自动编号</td></tr>
+          <tr><td><code>book_id</code></td><td><code>text</code> 外键</td><td>投给哪本书 → 关联 books.id</td></tr>
+          <tr><td><code>username</code></td><td><code>text</code></td><td>谁投的</td></tr>
+          <tr><td><code>voted_at</code></td><td><code>timestamptz</code></td><td>投票时间</td></tr>
+        </table>
+        <p class="muted"><strong>外键（Foreign Key）</strong>：让 <code>book_id</code> 必须是 books 表里真实存在的书，防止脏数据。</p>
+        <div class="callout"><p>票数不再单独存：<code>SELECT count(*) FROM votes WHERE book_id='book-001'</code> 随时现算，永远准确。</p></div>
+      </section>
+
+      <!-- 13 settings 表 -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 表结构</div>
+        <h2>settings 表：只有一行</h2>
+        <table class="schema">
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>id</code></td><td><code>int</code> 主键</td><td>固定为 1（永远只有一行）</td></tr>
+          <tr><td><code>vote_mode</code></td><td><code>text</code></td><td><code>single_per_book</code> 或 <code>single_total</code></td></tr>
+          <tr><td><code>updated_at</code></td><td><code>timestamptz</code></td><td>最后修改时间</td></tr>
+          <tr><td><code>updated_by</code></td><td><code>text</code></td><td>谁改的</td></tr>
+        </table>
+        <p>这张表存全局配置，用一个固定 id=1 的行来保存当前投票规则。</p>
+      </section>
+
+      <!-- 14 建表 SQL -->
+      <section class="slide">
+        <div class="eyebrow">第 3 步 · 建表 SQL</div>
+        <h2>一次性建好 4 张表</h2>
+        <p>左侧菜单点 <strong>SQL Editor → New query</strong>，粘贴下面全部代码，点 <strong>Run</strong>：</p>
+<pre><span class="k">create table</span> books (
+  id <span class="f">text</span> <span class="k">primary key</span>,
+  title <span class="f">text</span> <span class="k">not null</span>,
+  author <span class="f">text</span> <span class="k">not null</span>,
+  description <span class="f">text</span> <span class="k">default</span> <span class="s">''</span>,
+  cover <span class="f">text</span> <span class="k">default</span> <span class="s">''</span>
+);
+
+<span class="k">create table</span> users (
+  id <span class="f">text</span> <span class="k">primary key</span>,
+  username <span class="f">text</span> <span class="k">unique not null</span>,
+  password_hash <span class="f">text</span> <span class="k">not null</span>,
+  salt <span class="f">text</span> <span class="k">not null</span>,
+  created_at <span class="f">timestamptz</span> <span class="k">default</span> now(),
+  is_admin <span class="f">boolean</span> <span class="k">default</span> <span class="n">false</span>
+);
+
+<span class="k">create table</span> votes (
+  id <span class="f">bigint</span> <span class="k">generated always as identity primary key</span>,
+  book_id <span class="f">text</span> <span class="k">references</span> books(id),  <span class="c">-- 外键</span>
+  username <span class="f">text</span> <span class="k">not null</span>,
+  voted_at <span class="f">timestamptz</span> <span class="k">default</span> now()
+);
+
+<span class="k">create table</span> settings (
+  id <span class="f">int</span> <span class="k">primary key default</span> <span class="n">1</span>,
+  vote_mode <span class="f">text</span> <span class="k">not null default</span> <span class="s">'single_per_book'</span>,
+  updated_at <span class="f">timestamptz</span>,
+  updated_by <span class="f">text</span>
+);</pre>
+        <div class="callout"><p>✅ <strong>你应该看到：</strong>右下角提示 <em>Success. No rows returned</em>。在左侧 <strong>Table Editor</strong> 里能看到 4 张空表。</p></div>
+      </section>
+
+      <!-- 15 迁移思路 -->
+      <section class="slide">
+        <div class="eyebrow">第 4 步 · 导入数据</div>
+        <h2>把现有 JSON 数据搬进去</h2>
+        <p>三类数据，三种做法，都不难：</p>
+        <ul>
+          <li><strong>books / users</strong>：结构和表几乎一样，直接写 <code>insert</code> SQL 插入。</li>
+          <li><strong>votes</strong>：要把 <code>vote.json</code> 里每条 record 拆成单独一行。</li>
+          <li><strong>settings</strong>：插入固定的一行 id=1。</li>
+        </ul>
+        <div class="callout"><p>数据量很小（5 本书、2 个用户），手写 SQL 最直观。下一页给你现成模板。</p></div>
+      </section>
+
+      <!-- 16 迁移 SQL -->
+      <section class="slide">
+        <div class="eyebrow">第 4 步 · 导入数据</div>
+        <h2>插入数据的 SQL（在 SQL Editor 运行）</h2>
+<pre><span class="c">-- 图书（按你的 book.json 逐条填）</span>
+<span class="k">insert into</span> books (id, title, author, description) <span class="k">values</span>
+(<span class="s">'book-001'</span>, <span class="s">'深入浅出 Node.js'</span>, <span class="s">'朴灵'</span>, <span class="s">'介绍 Node.js 原理...'</span>),
+(<span class="s">'book-002'</span>, <span class="s">'JavaScript 高级程序设计'</span>, <span class="s">'Nicholas C. Zakas'</span>, <span class="s">'...'</span>);
+<span class="c">-- 其余 book-003~005 照此补全</span>
+
+<span class="c">-- 用户（password_hash / salt 从 user.json 原样复制）</span>
+<span class="k">insert into</span> users (id, username, password_hash, salt, is_admin) <span class="k">values</span>
+(<span class="s">'user-xxxx'</span>, <span class="s">'wenfeng.zhu@gmail.com'</span>, <span class="s">'原哈希'</span>, <span class="s">'原salt'</span>, <span class="n">true</span>);
+
+<span class="c">-- 投票：vote.json 里每条 record 写一行</span>
+<span class="k">insert into</span> votes (book_id, username, voted_at) <span class="k">values</span>
+(<span class="s">'book-001'</span>, <span class="s">'wenfeng.zhu@gmail.com'</span>, <span class="s">'2026-05-13T01:58:39.544Z'</span>);
+
+<span class="c">-- 投票规则</span>
+<span class="k">insert into</span> settings (id, vote_mode, updated_by) <span class="k">values</span> (<span class="n">1</span>, <span class="s">'single_per_book'</span>, <span class="s">'system'</span>);</pre>
+        <div class="callout warn"><p>⚠️ 旧 <code>vote.json</code> 里有些书 <code>count</code> 大于实际 records（如 book-002 count=3 但 records 为空）。迁移时<strong>以真实 records 为准</strong>，那些「虚高」的票就自然不计了。</p></div>
+      </section>
+
+      <!-- 17 安装客户端 -->
+      <section class="slide">
+        <div class="eyebrow">第 5 步 · 改造代码</div>
+        <h2>① 安装库 + 配置密钥</h2>
+        <p>在项目根目录终端运行：</p>
+<pre><span class="c"># Supabase 客户端 + 读取 .env 的工具 + WebSocket 支持</span>
+npm install @supabase/supabase-js dotenv ws</pre>
+        <div class="callout warn"><p>⚠️ 为什么要装 <code>ws</code>：Node.js 低于 22 没有内置 WebSocket，新版 supabase-js 初始化时会用到。Node ≥ 22 可不装。</p></div>
+        <p>新建文件 <code>.env</code>（和 server.js 同级），填入第 8 页拿到的值：</p>
+<pre>SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_KEY=sb_secret_...你的Secret key...</pre>
+        <p>再把 <code>.env</code> 加进 <code>.gitignore</code>，避免泄露：</p>
+<pre><span class="c"># .gitignore 里追加一行</span>
+.env</pre>
+      </section>
+
+      <!-- 18 client -->
+      <section class="slide">
+        <div class="eyebrow">第 5 步 · 改造代码</div>
+        <h2>② 新建数据库连接 db.js</h2>
+        <p>新建 <code>db.js</code>，统一创建一个 Supabase 客户端供全项目使用：</p>
+<pre><span class="k">require</span>(<span class="s">"dotenv"</span>).config();
+<span class="k">const</span> { createClient } = <span class="k">require</span>(<span class="s">"@supabase/supabase-js"</span>);
+
+<span class="c">// Node &lt; 22 没有内置 WebSocket，用 ws 补上</span>
+<span class="k">if</span> (!globalThis.WebSocket) {
+  globalThis.WebSocket = <span class="k">require</span>(<span class="s">"ws"</span>);
+}
+
+<span class="k">const</span> supabase = createClient(
+  process.env.<span class="n">SUPABASE_URL</span>,
+  process.env.<span class="n">SUPABASE_SERVICE_KEY</span>,  <span class="c">// 后端用 Secret key</span>
+  { auth: { persistSession: <span class="n">false</span> } }
+);
+
+module.exports = { supabase };</pre>
+        <p>之后在 <code>server.js</code> 顶部引入它，就能用 <code>supabase</code> 读写数据库了。</p>
+<pre><span class="k">const</span> { supabase } = <span class="k">require</span>(<span class="s">"./db"</span>);</pre>
+      </section>
+
+      <!-- 19 books before/after -->
+      <section class="slide">
+        <div class="eyebrow">第 5 步 · 改造代码（对比）</div>
+        <h2>③ 查询图书 + 票数</h2>
+        <div class="grid2">
+          <div class="col">
+            <h3><span class="badge-before">改造前 · 读文件</span></h3>
+<pre><span class="k">const</span> books =
+  <span class="k">await</span> readBooks();
+<span class="k">const</span> votes =
+  <span class="k">await</span> readVotes();
+<span class="c">// 自己遍历算票数</span></pre>
+          </div>
+          <div class="col">
+            <h3><span class="badge-after">改造后 · 查数据库</span></h3>
+<pre><span class="c">// 图书：字段名和原来一样</span>
+<span class="k">const</span> { data: books } =
+  <span class="k">await</span> supabase
+    .from(<span class="s">"books"</span>)
+    .select(<span class="s">"*"</span>);
+
+<span class="c">// 投票：取所有行，再按</span>
+<span class="c">// book_id 聚合成票数+记录</span>
+<span class="k">const</span> { data: rows } =
+  <span class="k">await</span> supabase
+    .from(<span class="s">"votes"</span>)
+    .select(<span class="s">"book_id, username, voted_at"</span>);</pre>
+          </div>
+        </div>
+        <p class="muted"><code>.from("表名").select("*")</code> = 「从这张表查所有列」。投票行用 JS 按 <code>book_id</code> 累加票数、收集记录，拼成和旧代码一样的结构，<strong>前端拿到的格式完全不变</strong>。</p>
+      </section>
+
+      <!-- 20 vote before/after -->
+      <section class="slide">
+        <div class="eyebrow">第 5 步 · 改造代码（对比）</div>
+        <h2>④ 投票接口 POST /api/votes</h2>
+        <div class="grid2">
+          <div class="col">
+            <h3><span class="badge-before">改造前</span></h3>
+<pre><span class="k">const</span> votes =
+  <span class="k">await</span> readVotes();
+votes[bookId] = nextEntry;
+<span class="k">await</span> writeJsonFile(
+  votesFile, votes);
+<span class="c">// 读改写，可能并发丢票</span></pre>
+          </div>
+          <div class="col">
+            <h3><span class="badge-after">改造后</span></h3>
+<pre><span class="c">// 1. 按投票规则检查</span>
+<span class="c">//    （是否已投过该书 / 任意书）</span>
+assertCanVote(
+  settings, votes,
+  bookId, username);
+
+<span class="c">// 2. 插入一行新投票</span>
+<span class="k">await</span> supabase
+  .from(<span class="s">"votes"</span>)
+  .insert({
+    book_id: bookId,
+    username,
+    voted_at: <span class="k">new</span> Date()
+      .toISOString()
+  });</pre>
+          </div>
+        </div>
+        <p class="muted">规则检查复用原有逻辑（已投过就返回 409）。<code>insert</code> 只追加一行，数据库自己保证并发安全，<strong>不再丢票</strong>。</p>
+      </section>
+
+      <!-- 21 login before/after -->
+      <section class="slide">
+        <div class="eyebrow">第 5 步 · 改造代码（对比）</div>
+        <h2>⑤ 注册 / 登录</h2>
+        <div class="grid2">
+          <div class="col">
+            <h3><span class="badge-after">注册：插入用户</span></h3>
+<pre><span class="k">await</span> supabase
+  .from(<span class="s">"users"</span>)
+  .insert({
+    id: createUserId(),
+    username,
+    password_hash: hash,
+    salt,
+    created_at: <span class="k">new</span> Date()
+      .toISOString(),
+    is_admin: <span class="n">false</span>
+  });</pre>
+          </div>
+          <div class="col">
+            <h3><span class="badge-after">登录：按用户名查 1 条</span></h3>
+<pre><span class="k">const</span> { data: user } =
+  <span class="k">await</span> supabase
+    .from(<span class="s">"users"</span>)
+    .select(<span class="s">"*"</span>)
+    .eq(<span class="s">"username"</span>, username)
+    .single();
+<span class="c">// 再用 salt 校验密码哈希</span></pre>
+          </div>
+        </div>
+        <div class="callout"><p>密码哈希逻辑（<code>scrypt</code> + salt）<strong>完全不用改</strong>，只是把「从文件找用户」换成「从数据库查用户」。<code>.single()</code> = 只取一条。</p></div>
+      </section>
+
+      <!-- 22 安全 env -->
+      <section class="slide">
+        <div class="eyebrow">第 6 步 · 安全</div>
+        <h2>密钥安全三条铁律</h2>
+        <ol>
+          <li><strong>密钥放 <code>.env</code></strong>，代码里用 <code>process.env.XXX</code> 读取，绝不硬编码。</li>
+          <li><strong><code>.env</code> 写进 <code>.gitignore</code></strong>，永远不提交到 Git / GitHub。</li>
+          <li><strong>Secret key（<code>sb_secret_...</code>）只在后端用</strong>，绝不出现在 <code>public/</code> 前端代码里。前端要用就用 Publishable key。</li>
+        </ol>
+        <h3>关于 RLS（行级安全）</h3>
+        <p><strong>RLS（Row Level Security）</strong>：Postgres 的一道门禁，控制「谁能读/写哪些行」。</p>
+        <div class="callout warn"><p>本项目所有数据库操作都走<strong>后端</strong>（用 Secret key，会绕过 RLS），所以你这一版<strong>保持默认即可</strong>。等以后让前端直连数据库时，再回来学 RLS。</p></div>
+      </section>
+
+      <!-- 23 验证 + 排坑 -->
+      <section class="slide">
+        <div class="eyebrow">第 7 & 8 步 · 验证与排坑</div>
+        <h2>验证 + 常见报错</h2>
+        <h3>✅ 怎么确认成功</h3>
+        <ul>
+          <li><code>npm start</code> 启动，打开网站投一票 → 回 Supabase <strong>Table Editor</strong> 刷新 votes 表，应能看到新增的一行。</li>
+          <li>退出登录、用别人账号投，票数实时变化，规则（不能重复投）仍然生效。</li>
+        </ul>
+        <h3>🐞 最容易踩的坑</h3>
+        <table class="schema">
+          <tr><th>报错 / 现象</th><th>原因 & 解决</th></tr>
+          <tr><td>supabaseUrl is required</td><td>.env 没加载或拼错 → 确认 <code>require("dotenv").config()</code> 在最上面</td></tr>
+          <tr><td>insert 报 foreign key 违反</td><td>votes 的 book_id 在 books 表里不存在 → 先导 books 再导 votes</td></tr>
+          <tr><td>duplicate key / unique</td><td>username 或 id 重复插入 → 检查是否重复运行了导入 SQL</td></tr>
+          <tr><td>data 为 null / 空</td><td>多半是 RLS 拦了 → 确认后端用的是 Secret key（<code>sb_secret_...</code>）</td></tr>
+          <tr><td>列名报错</td><td>JS 的 <code>passwordHash</code> ↔ 表的 <code>password_hash</code> 没对应上</td></tr>
+        </table>
+        <div class="callout"><p>🎉 完成！数据已在云端，后端读写数据库，前端零改动。祝迁移顺利！</p></div>
+      </section>
+
+    </div>
+
+    <div class="hint">← / → 翻页 · F 全屏</div>
+    <div class="nav">
+      <button onclick="go(-1)">← 上一页</button>
+      <button onclick="go(1)">下一页 →</button>
+    </div>
+
+    <script>
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      let idx = 0;
+      const total = slides.length;
+
+      const coverCount = document.getElementById("coverCount");
+      if (coverCount) coverCount.textContent = `用 ← / → 键翻页 · 共 ${total} 页`;
+
+      // 给每页加页脚（页码 + 进度条）
+      slides.forEach((s, i) => {
+        if (i === 0) return; // 封面不加
+        const f = document.createElement("footer");
+        f.innerHTML = `<span>JSON → Supabase 迁移教程</span>
+          <span class="progress"><i style="width:${((i + 1) / total) * 100}%"></i></span>
+          <span>${i + 1} / ${total}</span>`;
+        s.appendChild(f);
+      });
+
+      function show(n) {
+        idx = Math.max(0, Math.min(total - 1, n));
+        slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+        slides[idx].scrollTop = 0;
+      }
+      function go(d) { show(idx + d); }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { go(1); e.preventDefault(); }
+        else if (e.key === "ArrowLeft" || e.key === "PageUp") { go(-1); e.preventDefault(); }
+        else if (e.key === "Home") show(0);
+        else if (e.key === "End") show(total - 1);
+        else if (e.key.toLowerCase() === "f") {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else document.exitFullscreen();
+        }
+      });
+    </script>
+  </body>
+</html>
