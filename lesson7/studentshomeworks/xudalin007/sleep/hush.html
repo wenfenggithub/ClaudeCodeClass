@@ -1,0 +1,3262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>安眠岛 · Hush</title>
+  <meta name="description" content="陪你慢慢睡着，一晚比一晚好。" />
+  <meta name="theme-color" content="#100D14" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            ink: { 50:"#F7F5F2",100:"#EDE9E2",200:"#D8D2C7",300:"#B6AEA1",400:"#8C8478",500:"#5D574E",600:"#3F3A33",700:"#2B2823",800:"#1B1916",900:"#0F0E0C" },
+            moon:{ 50:"#F4F0F8",100:"#E6DEF0",200:"#CDBEE0",300:"#A998C0",400:"#857298",500:"#65557A",600:"#4B3F5B",700:"#332B3F",800:"#1F1A26",900:"#100D14" },
+            amber:{ 50:"#FBF3E6",100:"#F3E1BC",200:"#E8C786",300:"#D7A653",400:"#B98835",500:"#8E6722" },
+            score:{ low:"#A998C0", mid:"#D7A653", high:"#9CB89C" }
+          },
+          fontSize: {
+            xs:["0.8125rem",{lineHeight:"1.5"}],
+            sm:["0.9375rem",{lineHeight:"1.6"}],
+            base:["1.0625rem",{lineHeight:"1.7"}],
+            lg:["1.1875rem",{lineHeight:"1.6"}],
+            xl:["1.4375rem",{lineHeight:"1.4"}],
+            "2xl":["1.75rem",{lineHeight:"1.3"}],
+            "3xl":["2.25rem",{lineHeight:"1.2"}]
+          },
+          borderRadius: { soft:"1rem", pill:"9999px" },
+          boxShadow: { soft:"0 6px 24px -8px rgba(0,0,0,0.08)", "soft-dark":"0 6px 24px -8px rgba(0,0,0,0.5)" }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root{
+      --bg:#F7F5F2; --bg-soft:#EDE9E2; --fg:#2B2823; --fg-soft:#5D574E;
+      --accent:#65557A; --line:#D8D2C7; --card:#FFFFFF;
+    }
+    .dark{
+      --bg:#100D14; --bg-soft:#1F1A26; --fg:#EDE9E2; --fg-soft:#B6AEA1;
+      --accent:#CDBEE0; --line:#2B2823; --card:#1B1916;
+    }
+    html,body{
+      background:var(--bg); color:var(--fg);
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      overscroll-behavior:none;
+      font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    }
+    body{ min-height:100dvh; }
+    .dark *{ transition-duration:320ms; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+
+    /* Babel 编译时的初始 loading 文案 */
+    #boot{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      color:#8C8478; font-size:14px; gap:8px; flex-direction:column;
+    }
+    #boot .dot{
+      width:8px; height:8px; border-radius:50%; background:#A998C0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse{ 0%,100%{opacity:.4;transform:scale(.9)} 50%{opacity:1;transform:scale(1.1)} }
+  </style>
+</head>
+<body>
+  <div id="boot"><div class="dot"></div><div>正在准备夜灯…</div></div>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, createContext, useContext, useCallback } = React;
+
+/* ============================================================
+   工具
+============================================================ */
+const uid = () => (crypto?.randomUUID?.() ?? "id-" + Math.random().toString(36).slice(2));
+const cls = (...xs) => xs.filter(Boolean).join(" ");
+const pad = (n) => String(n).padStart(2,"0");
+const fmtDate = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtMD = (s) => { const d=new Date(s); return `${d.getMonth()+1} 月 ${d.getDate()} 日`; };
+const fmtHM = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const parseHM = (s) => { const [h,m] = s.split(":").map(Number); return h*60+m; };
+const todayStr = () => fmtDate(new Date());
+const subDays = (date, n) => new Date(date.getTime() - n*86400000);
+
+/* ============================================================
+   评分引擎（spec.md 4.3）
+============================================================ */
+const clamp = (n,lo,hi) => Math.max(lo,Math.min(hi,n));
+
+function durationScore(total, target){
+  const diff = Math.abs(total - target);
+  if (diff <= 30) return 100;
+  if (diff <= 60) return 90;
+  if (diff <= 90) return 75;
+  if (diff <= 120) return 60;
+  if (diff <= 150) return 45;
+  return 30;
+}
+function efficiencyScore(e){
+  if (e>=0.9) return 100;
+  if (e>=0.85) return 92;
+  if (e>=0.8) return 82;
+  if (e>=0.75) return 72;
+  if (e>=0.7) return 62;
+  if (e>=0.65) return 52;
+  if (e>=0.55) return 40;
+  return 30;
+}
+function latencyScore(L){
+  if (L<15) return 100;
+  if (L<20) return 92;
+  if (L<30) return 80;
+  if (L<45) return 65;
+  if (L<60) return 50;
+  return 35;
+}
+function awakeningScore(c, dur){
+  let s=100;
+  if (c===1) s-=8; else if (c===2) s-=20; else if (c>=3) s-=35;
+  if (dur>5) s-=5;
+  if (dur>20) s-=10;
+  if (dur>60) s-=20;
+  return clamp(s,25,100);
+}
+function subjectiveScore(stars){ return clamp(20 + (stars-1)*20, 0, 100); }
+function regularityScore(beds, wakes){
+  if (beds.length<3) return 80;
+  const std = (arr) => {
+    const m = arr.map(parseHM);
+    const mean = m.reduce((a,b)=>a+b,0)/m.length;
+    const v = m.reduce((a,x)=>a+(x-mean)**2,0)/m.length;
+    return Math.sqrt(v);
+  };
+  const a = (std(beds)+std(wakes))/2;
+  if (a<20) return 100;
+  if (a<35) return 88;
+  if (a<50) return 75;
+  if (a<70) return 60;
+  if (a<90) return 45;
+  return 30;
+}
+
+const tierOf = (t) => t>=90?"wonderful":t>=70?"nice":t>=50?"okay":t>=30?"tough":"be_kind";
+const TIER_TEXT = {
+  wonderful:{label:"美妙的一夜", ribbon:"继续保持这样的节奏"},
+  nice:{label:"不错", ribbon:"今天的你值得这份轻盈"},
+  okay:{label:"还可以", ribbon:"稳住，慢慢往前走"},
+  tough:{label:"有点辛苦", ribbon:"今天对自己温柔一点"},
+  be_kind:{label:"今天对自己温柔一点", ribbon:"辛苦你了，今晚试着提早 20 分钟休息"}
+};
+const tierColor = (t) => (t==="wonderful"||t==="nice")?"#9CB89C":(t==="okay")?"#A998C0":"#D7A653";
+
+function pickInsight(d, tier){
+  if (d.sleepLatencyMin>=45) return "今晚入睡花了不少时间，睡前 5 分钟的呼吸训练或许会有帮助。";
+  if (d.wakeCount>=2) return "你昨晚醒了几次，留意一下傍晚后的咖啡因或屏幕时间。";
+  if (d.totalSleepMin<360) return "睡眠时长偏短，今天可以稍微提早 20 分钟准备休息。";
+  if (d.subjectiveQuality<=2) return "今天的感受似乎不太好，给自己一些喘息的空间。";
+  if (tier==="wonderful") return "状态很棒，你的身体在慢慢记住「能睡好」的感觉。";
+  if (tier==="nice") return "睡得还不错，节奏正在稳定下来。";
+  return "我们一起一步一步来，今晚比昨晚好一点就够了。";
+}
+
+function calcScore(diary, profile, recent){
+  const beds = recent.map(d => fmtHM(new Date(d.bedtime)));
+  const wakes = recent.map(d => fmtHM(new Date(d.wakeTime)));
+  const sd = durationScore(diary.totalSleepMin, profile.targetSleepMin);
+  const se = efficiencyScore(diary.sleepEfficiency);
+  const sl = latencyScore(diary.sleepLatencyMin);
+  const sa = awakeningScore(diary.wakeCount, diary.wakeDurationMin);
+  const ss = subjectiveScore(diary.subjectiveQuality);
+  const sr = regularityScore(beds, wakes);
+  const total = Math.round(sd*.25 + se*.3 + sl*.15 + sa*.15 + ss*.1 + sr*.05);
+  const tier = tierOf(total);
+  return {
+    scoreId: uid(),
+    diaryId: diary.diaryId,
+    total,
+    durationScore: Math.round(sd),
+    efficiencyScore: Math.round(se),
+    latencyScore: Math.round(sl),
+    awakeningScore: Math.round(sa),
+    subjectiveScore: Math.round(ss),
+    regularityScore: Math.round(sr),
+    tier,
+    insight: pickInsight(diary, tier)
+  };
+}
+
+function computeTimes(bed, wake, lat, wakeDur){
+  const tib = Math.max(0, Math.round((wake - bed) / 60000));
+  const total = Math.max(0, tib - lat - wakeDur);
+  const eff = tib > 0 ? total/tib : 0;
+  return { timeInBedMin: tib, totalSleepMin: total, sleepEfficiency: Number(eff.toFixed(3)) };
+}
+
+/* ============================================================
+   规则引擎 v1（spec.md 4.10）
+============================================================ */
+const RULES = [
+  { id:"SHORT_SLEEP_3", priority:90, severity:"suggest", check:(p, ds) => {
+    const last3 = ds.slice(-3); if (last3.length<3) return null;
+    if (!last3.every(d => d.totalSleepMin < Math.min(p.targetSleepMin-60, 360))) return null;
+    return "你已经连续 3 天睡得偏少，今天可以提前 30 分钟准备睡觉，给身体一点缓冲。";
+  }},
+  { id:"LONG_LATENCY_3", priority:88, severity:"suggest", check:(p, ds) => {
+    const last3 = ds.slice(-3); if (last3.length<3) return null;
+    if (!last3.every(d => d.sleepLatencyMin>=30)) return null;
+    return "最近入睡都偏长，要不要试试 4-7-8 呼吸？通常 5 分钟就能让你松下来。";
+  }},
+  { id:"FREQUENT_AWAKENING_7", priority:80, severity:"suggest", check:(p, ds) => {
+    const last7 = ds.slice(-7); if (last7.length<5) return null;
+    const avg = last7.reduce((s,d)=>s+d.wakeCount,0)/last7.length;
+    if (avg<2) return null;
+    return "最近夜里醒得比较多，留意一下傍晚后是否摄入了咖啡因或酒精。";
+  }},
+  { id:"HIGH_STRESS_5", priority:85, severity:"suggest", check:(p, ds) => {
+    const last5 = ds.slice(-5).filter(d=>d.stressLevel!=null); if (last5.length<3) return null;
+    const high = last5.filter(d=>d.stressLevel>=4);
+    if (high.length<3) return null;
+    return "最近压力指数偏高，睡前 10 分钟的「担忧时间」可能会帮你卸下一点。";
+  }},
+  { id:"LATE_SCREEN_5", priority:70, severity:"suggest", check:(p, ds) => {
+    const last5 = ds.slice(-5).filter(d => d.lastScreenTime && d.bedtime);
+    if (last5.length<3) return null;
+    const late = last5.filter(d => {
+      const diff = (new Date(d.bedtime).getTime() - new Date(d.lastScreenTime).getTime())/60000;
+      return diff < 30;
+    });
+    if (late.length<3) return null;
+    return "在睡前 30 分钟收起手机，可能会让入睡快很多。";
+  }},
+  { id:"LATE_CAFFEINE_7", priority:65, severity:"suggest", check:(p, ds) => {
+    const last7 = ds.slice(-7);
+    const evening = last7.filter(d => d.caffeine === "afternoon" || d.caffeine === "evening");
+    if (evening.length<3) return null;
+    return "下午 3 点后的咖啡因，可能正在偷走你的深睡眠。";
+  }},
+  { id:"ALCOHOL_HIGH_7", priority:60, severity:"suggest", check:(p, ds) => {
+    const last7 = ds.slice(-7);
+    const heavy = last7.filter(d => d.alcohol === "heavy");
+    if (heavy.length<3) return null;
+    return "酒精虽然让人更快睡着，但会显著降低后半夜的睡眠质量。";
+  }},
+  { id:"LATE_BEDTIME_3", priority:55, severity:"suggest", check:(p, ds) => {
+    const last3 = ds.slice(-3); if (last3.length<3) return null;
+    const tgt = parseHM(p.targetBedtime);
+    const allLate = last3.every(d => {
+      const t = new Date(d.bedtime); const cur = t.getHours()*60+t.getMinutes();
+      const norm = cur<360 ? cur+1440 : cur;
+      const tg = tgt<360 ? tgt+1440 : tgt;
+      return norm - tg >= 60;
+    });
+    if (!allLate) return null;
+    return `最近上床都比目标晚了一个多小时，明晚可以试试 ${p.targetBedtime} 前关灯。`;
+  }},
+  { id:"LOW_EFFICIENCY_14", priority:95, severity:"warning", check:(p, ds) => {
+    const last14 = ds.slice(-14); if (last14.length<10) return null;
+    const avg = last14.reduce((s,d)=>s+d.sleepEfficiency,0)/last14.length;
+    if (avg>=0.65) return null;
+    return "你近两周的睡眠效率持续偏低，如果同时有日间疲劳，建议考虑预约睡眠科。";
+  }},
+  { id:"MOOD_LOW_30", priority:92, severity:"warning", check:(p, ds) => {
+    const last30 = ds.slice(-30); if (last30.length<14) return null;
+    const lowCount = last30.reduce((s,d)=> s + ((d.moodTags||[]).includes("low")||(d.moodTags||[]).includes("anxious") ? 1 : 0), 0);
+    if (lowCount<14) return null;
+    return "近一段时间情绪偏低落，必要时心理科或心理咨询能给你一些支持。";
+  }}
+];
+
+function evaluateRules(profile, diaries, recentInsights){
+  const today = todayStr();
+  const cutoff = subDays(new Date(), 7).getTime();
+  const recentRules = new Set(recentInsights.filter(i => new Date(i.date).getTime() > cutoff).map(i => i.ruleId));
+  const ds = [...diaries].sort((a,b)=>a.date.localeCompare(b.date));
+  const hits = [];
+  for (const r of RULES){
+    if (recentRules.has(r.id)) continue;
+    const msg = r.check(profile, ds);
+    if (msg) hits.push({ ruleId:r.id, message:msg, severity:r.severity, priority:r.priority });
+  }
+  hits.sort((a,b)=>b.priority - a.priority);
+  return hits.slice(0,3).map(h => ({
+    insightId: uid(), userId: profile.userId, date: today,
+    ruleId: h.ruleId, message: h.message, severity: h.severity
+  }));
+}
+
+/* ============================================================
+   风险识别（spec.md 4.11）
+============================================================ */
+const SUICIDE_KEYWORDS = ["想死","不想活","活不下去","自杀","结束自己","结束生命","了结","撑不下去","活着没意思","没意义","自残","自伤","kill myself","suicide","end my life","want to die"];
+const containsSelfHarm = (t) => !!t && SUICIDE_KEYWORDS.some(k => t.toLowerCase().includes(k.toLowerCase()));
+
+function checkInitialRisk(p){
+  const out = [];
+  const longD = p.troubleDuration === "6_12m" || p.troubleDuration === "gt_1y";
+  if (longD && p.severity >= 4){
+    out.push({
+      ruleId:"INITIAL_LONG_SEVERE", level:"moderate",
+      message:"你的睡眠困扰已经持续了较长时间，建议预约一次睡眠科或精神心理科的咨询。这不是失败，只是身体在请求专业的支持。"
+    });
+  }
+  if ((p.troubleTypes||[]).includes("snoring")){
+    out.push({
+      ruleId:"INITIAL_SNORING", level:"moderate",
+      message:"如果你打鼾且常感到白天困倦，建议筛查一次睡眠呼吸暂停（OSA）。耳鼻喉或睡眠科都可以做。"
+    });
+  }
+  return out;
+}
+
+const HOTLINES = [
+  { name:"全国心理援助热线", phone:"400-161-9995", note:"24 小时·全国通用" },
+  { name:"北京心理危机研究与干预中心", phone:"010-82951332", note:"24 小时" }
+];
+
+/* ============================================================
+   21 天计划模板
+============================================================ */
+const PLAN_DAYS = [
+  // 第 1 周：固定起床
+  { title:"设置一个固定的起床时间", desc:"选一个未来 7 天都能坚持的时间，包括周末。" },
+  { title:"今天按时起床", desc:"即使昨晚没睡好，也尽量按时起。这是节律重建的第一块基石。" },
+  { title:"记录一次睡眠日记", desc:"醒来后用 60 秒填一份早晨问卷。" },
+  { title:"在自然光下待 10 分钟", desc:"晨间光照能帮你校准生物钟。" },
+  { title:"今天不补觉", desc:"周末也按时起床，把睡眠压力留到晚上。" },
+  { title:"下午 3 点后不喝咖啡", desc:"包括茶、可乐、巧克力等含咖啡因饮品。" },
+  { title:"为本周做一次小复盘", desc:"回顾这 7 天的起床时间是否一致。" },
+  // 第 2 周：刺激控制
+  { title:"床上不刷手机", desc:"把手机放在伸手够不到的地方，让大脑重新把床和睡眠联系起来。" },
+  { title:"20 分钟规则", desc:"如果躺下 20 分钟还没睡着，起身去客厅做点无聊的事，困了再回去。" },
+  { title:"白天不在床上工作", desc:"包括躺着刷视频、办公。" },
+  { title:"睡前 30 分钟暗光", desc:"把卧室主灯换成暖色台灯。" },
+  { title:"尝试一次 4-7-8 呼吸", desc:"5 分钟即可，找一个舒服的姿势。" },
+  { title:"把烦心事写下来", desc:"睡前 10 分钟「担忧时间」：写下来，归档，明天再想。" },
+  { title:"本周复盘", desc:"本周你是否做到「床=只睡觉」？哪一项最难坚持？" },
+  // 第 3 周：睡眠卫生
+  { title:"晚饭和上床间隔 ≥ 3 小时", desc:"胃在夜间忙工作，会影响入睡。" },
+  { title:"今天做一次白天运动", desc:"散步、瑜伽都算。但避免睡前 2 小时剧烈运动。" },
+  { title:"卧室温度 18–22°C", desc:"稍微凉一点更利于入睡。" },
+  { title:"尝试一次身体扫描冥想", desc:"10 分钟，把注意力从头顶慢慢扫到脚底。" },
+  { title:"今天不饮酒", desc:"酒精会让你更快睡着，但严重破坏深睡眠。" },
+  { title:"把闹钟挪出卧室", desc:"如果你常半夜看时间，这个动作很有帮助。" },
+  { title:"21 天总结", desc:"回顾这三周你最大的变化是什么？最值得保留的是哪一项？" }
+];
+const WEEK_FOCUS = ["固定起床时间", "刺激控制：床=只睡觉", "睡眠卫生 + 睡前放松"];
+
+function createPlan(userId){
+  return {
+    plan: {
+      planId: uid(),
+      userId,
+      startedAt: todayStr(),
+      status: "active",
+      weeklyFocus: WEEK_FOCUS
+    },
+    tasks: PLAN_DAYS.map((d,i) => ({
+      taskId: uid(),
+      dayIndex: i+1,
+      title: d.title,
+      description: d.desc,
+      done: false
+    }))
+  };
+}
+
+function planDayIndex(plan){
+  const start = new Date(plan.startedAt + "T00:00:00");
+  const days = Math.floor((Date.now()-start.getTime())/86400000);
+  return Math.max(1, Math.min(21, days+1));
+}
+
+/* ============================================================
+   Store（localStorage）
+============================================================ */
+const STORAGE_KEY = "hush.app.v1.html";
+const DEFAULT_SETTINGS = {
+  themeMode: "auto-night",
+  autoNightStart: "21:00",
+  autoNightEnd: "07:00",
+  cloudTTSProxyUrl: "",     // 指向你部署的 /api/tts；不填则只用浏览器朗读
+  ttsCloudVoice: "zh_female_qingxin_v2_mars_bigtts"
+};
+// 豆包 TTS 中文音色
+const CLOUD_TTS_VOICES = [
+  { id:"zh_female_qingxin_v2_mars_bigtts", label:"清新女声（推荐睡前）" },
+  { id:"zh_female_wanwanxiaohe_moon_bigtts", label:"湾湾小何（柔和台湾腔）" },
+  { id:"zh_female_tianmeixiaoyuan_moon_bigtts", label:"甜美小源" },
+  { id:"zh_male_jieshuo_mars_bigtts", label:"解说男声" },
+  { id:"zh_female_shaonv_mars_bigtts", label:"少女音" },
+  { id:"default", label:"服务端默认音色" }
+];
+const EMPTY_STATE = {
+  profile: null,
+  diaries: [],
+  scores: [],
+  plan: null,
+  planTasks: [],
+  practices: [],
+  insights: [],
+  riskFlags: [],
+  worries: [],
+  reframes: [],
+  favoriteSounds: [],
+  recentSounds: [],
+  settings: DEFAULT_SETTINGS
+};
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return EMPTY_STATE;
+    const p = JSON.parse(raw);
+    return { ...EMPTY_STATE, ...p, settings: { ...DEFAULT_SETTINGS, ...(p.settings||{}) } };
+  } catch { return EMPTY_STATE; }
+}
+function saveState(s){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+
+const StoreCtx = createContext(null);
+const useStore = () => useContext(StoreCtx);
+
+function StoreProvider({ children }){
+  const [s, _set] = useState(() => loadState());
+  const set = useCallback((patch) => {
+    _set(prev => {
+      const next = typeof patch === "function" ? patch(prev) : { ...prev, ...patch };
+      saveState(next);
+      return next;
+    });
+  }, []);
+  const api = useMemo(() => ({
+    state: s,
+    set,
+    setProfile: (p) => set(prev => ({ ...prev, profile: p })),
+    addDiary: (d, sc) => set(prev => ({ ...prev, diaries:[...prev.diaries, d], scores:[...prev.scores, sc] })),
+    setPlan: (plan, tasks) => set(prev => ({ ...prev, plan, planTasks: tasks })),
+    toggleTask: (taskId) => set(prev => ({
+      ...prev,
+      planTasks: prev.planTasks.map(t => t.taskId===taskId ? {...t, done:!t.done, doneAt: !t.done ? new Date().toISOString() : undefined} : t)
+    })),
+    addInsights: (items) => set(prev => ({ ...prev, insights:[...prev.insights, ...items] })),
+    addRiskFlag: (flag) => set(prev => {
+      const cutoff = Date.now() - 7*86400000;
+      if (prev.riskFlags.find(f => f.ruleId === flag.ruleId && new Date(f.triggeredAt).getTime() > cutoff)) return prev;
+      return { ...prev, riskFlags: [...prev.riskFlags, flag] };
+    }),
+    ackRiskFlag: (id) => set(prev => ({ ...prev, riskFlags: prev.riskFlags.map(f => f.flagId===id?{...f, acknowledged:true}:f) })),
+    addPractice: (p) => set(prev => ({ ...prev, practices:[...prev.practices, p] })),
+    addWorry: (w) => set(prev => ({ ...prev, worries:[...prev.worries, w] })),
+    archiveWorry: (worryId) => set(prev => ({
+      ...prev,
+      worries: prev.worries.map(w => w.worryId===worryId ? {...w, archived:true, archivedAt:new Date().toISOString()} : w)
+    })),
+    deleteWorry: (worryId) => set(prev => ({ ...prev, worries: prev.worries.filter(w => w.worryId!==worryId) })),
+    addReframe: (r) => set(prev => ({ ...prev, reframes:[...prev.reframes, r] })),
+    deleteReframe: (id) => set(prev => ({ ...prev, reframes: prev.reframes.filter(r => r.reframeId!==id) })),
+    toggleFavoriteSound: (id) => set(prev => ({
+      ...prev,
+      favoriteSounds: prev.favoriteSounds.includes(id) ? prev.favoriteSounds.filter(x=>x!==id) : [id, ...prev.favoriteSounds]
+    })),
+    trackRecentSound: (id) => set(prev => ({
+      ...prev,
+      recentSounds: [id, ...prev.recentSounds.filter(x=>x!==id)].slice(0, 8)
+    })),
+    updateSettings: (patch) => set(prev => ({ ...prev, settings: { ...prev.settings, ...patch } })),
+    resetAll: () => { localStorage.removeItem(STORAGE_KEY); _set(EMPTY_STATE); }
+  }), [s, set]);
+  return <StoreCtx.Provider value={api}>{children}</StoreCtx.Provider>;
+}
+
+/* ============================================================
+   Theme
+============================================================ */
+function ThemeManager(){
+  const { state } = useStore();
+  useEffect(() => {
+    const apply = () => {
+      const html = document.documentElement;
+      const m = state.settings.themeMode;
+      let dark = false;
+      if (m === "dark") dark = true;
+      else if (m === "system") dark = matchMedia("(prefers-color-scheme: dark)").matches;
+      else if (m === "auto-night"){
+        const now = new Date();
+        const cur = now.getHours()*60+now.getMinutes();
+        const s = parseHM(state.settings.autoNightStart);
+        const e = parseHM(state.settings.autoNightEnd);
+        dark = s < e ? (cur>=s && cur<e) : (cur>=s || cur<e);
+      }
+      html.classList.toggle("dark", dark);
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#100D14" : "#F7F5F2");
+    };
+    apply();
+    const i = setInterval(apply, 60000);
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", apply);
+    return () => { clearInterval(i); mq.removeEventListener("change", apply); };
+  }, [state.settings.themeMode, state.settings.autoNightStart, state.settings.autoNightEnd]);
+  return null;
+}
+
+/* ============================================================
+   基础组件
+============================================================ */
+const Card = ({ className, children, ...rest }) => (
+  <div className={cls("bg-white dark:bg-ink-800 rounded-soft shadow-soft dark:shadow-soft-dark p-5 border border-ink-100/60 dark:border-ink-700/60", className)} {...rest}>{children}</div>
+);
+
+const Button = ({ variant="primary", size="md", block, className, children, ...rest }) => (
+  <button
+    className={cls(
+      "rounded-pill font-medium transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none",
+      size==="sm" && "px-4 py-2 text-sm",
+      size==="md" && "px-5 py-2.5 text-base",
+      size==="lg" && "px-6 py-3 text-lg",
+      block && "w-full",
+      variant==="primary" && "bg-moon-500 text-ink-50 hover:bg-moon-600 dark:bg-moon-300 dark:text-ink-900 dark:hover:bg-moon-200",
+      variant==="ghost" && "text-moon-600 hover:bg-moon-50 dark:text-moon-200 dark:hover:bg-moon-700/40",
+      variant==="outline" && "border border-ink-200 text-ink-700 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-100 dark:hover:bg-ink-800",
+      variant==="danger-soft" && "bg-amber-100 text-amber-500 hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-100",
+      className
+    )}
+    {...rest}>{children}</button>
+);
+
+function Stars({ value, onChange, readOnly, size="md" }){
+  return (
+    <div className="flex items-center gap-1.5">
+      {[1,2,3,4,5].map(i => (
+        <button key={i} type="button" disabled={readOnly} onClick={()=>onChange?.(i)}
+          className={cls(
+            "transition active:scale-95 disabled:cursor-default",
+            size==="sm" && "text-xl",
+            size==="md" && "text-2xl",
+            size==="lg" && "text-3xl",
+            i<=value ? "text-amber-300" : "text-ink-200 dark:text-ink-700"
+          )}>★</button>
+      ))}
+    </div>
+  );
+}
+
+function Slider({ min, max, step=1, value, onChange, label, formatValue }){
+  return (
+    <div className="space-y-2">
+      {label && (
+        <div className="flex justify-between text-sm text-ink-500 dark:text-ink-300">
+          <span>{label}</span>
+          <span className="font-medium text-moon-600 dark:text-moon-200">{formatValue?formatValue(value):value}</span>
+        </div>
+      )}
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e)=>onChange(Number(e.target.value))}
+        className="w-full accent-moon-500 dark:accent-moon-300"/>
+    </div>
+  );
+}
+
+function SelectGroup({ options, value, onChange, multiple, columns=2 }){
+  const colsClass = columns===1?"grid-cols-1":columns===3?"grid-cols-3":columns===4?"grid-cols-4":"grid-cols-2";
+  const isActive = (v) => multiple ? value.includes(v) : value===v;
+  const toggle = (v) => {
+    if (multiple){
+      if (value.includes(v)) onChange(value.filter(x=>x!==v));
+      else onChange([...value, v]);
+    } else onChange(v);
+  };
+  return (
+    <div className={cls("grid gap-2", colsClass)}>
+      {options.map(o => {
+        const a = isActive(o.value);
+        return (
+          <button key={o.value} type="button" onClick={()=>toggle(o.value)}
+            className={cls(
+              "px-4 py-3 rounded-soft text-left transition border",
+              a ? "bg-moon-50 border-moon-300 text-moon-700 dark:bg-moon-700/40 dark:border-moon-300 dark:text-moon-100"
+                : "bg-white border-ink-200 text-ink-700 hover:bg-ink-50 dark:bg-ink-800 dark:border-ink-700 dark:text-ink-100"
+            )}>
+            <div className="text-sm font-medium">{o.label}</div>
+            {o.hint && <div className="text-xs text-ink-400 dark:text-ink-300 mt-0.5">{o.hint}</div>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ============================================================
+   ScoreArc / 图表
+============================================================ */
+function ScoreArc({ score, size=180 }){
+  const tier = tierOf(score);
+  const t = TIER_TEXT[tier];
+  const r = size/2 - 14;
+  const cx = size/2, cy = size/2;
+  const total = 270, start = 135, end = start+total;
+  const polar = (a) => { const r2 = (a*Math.PI)/180; return [cx+r*Math.cos(r2), cy+r*Math.sin(r2)]; };
+  const [x1,y1] = polar(start);
+  const [x2,y2] = polar(end);
+  const bgPath = `M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}`;
+  const pct = clamp(score/100, 0, 1);
+  const fEnd = start + total*pct;
+  const [fx,fy] = polar(fEnd);
+  const fLarge = total*pct > 180 ? 1 : 0;
+  const fPath = `M ${x1} ${y1} A ${r} ${r} 0 ${fLarge} 1 ${fx} ${fy}`;
+  const color = tierColor(tier);
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <path d={bgPath} fill="none" stroke="currentColor" className="text-ink-100 dark:text-ink-700" strokeWidth={10} strokeLinecap="round"/>
+        <path d={fPath} fill="none" stroke={color} strokeWidth={10} strokeLinecap="round"/>
+        <text x={cx} y={cy-4} textAnchor="middle" className="fill-ink-700 dark:fill-ink-50" style={{fontSize:36,fontWeight:600}}>{score}</text>
+        <text x={cx} y={cy+22} textAnchor="middle" className="fill-ink-400 dark:fill-ink-300" style={{fontSize:12}}>昨晚的睡眠分</text>
+      </svg>
+      <div className="text-center mt-1">
+        <div className="text-lg font-medium">{t.label}</div>
+        <div className="text-sm text-ink-500 dark:text-ink-300 mt-1">{t.ribbon}</div>
+      </div>
+    </div>
+  );
+}
+
+function MiniBarChart({ points, max=100, height=110 }){
+  if (points.length===0) return <div className="text-sm text-ink-400 py-6 text-center">暂无数据</div>;
+  const w = 280, pad = 24, bw = (w - pad*2) / points.length - 6;
+  return (
+    <svg viewBox={`0 0 ${w} ${height+30}`} className="w-full">
+      {points.map((p,i) => {
+        const h = (p.value/max) * height;
+        const x = pad + i*((w-pad*2)/points.length);
+        const y = height - h + 8;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={bw} height={h} rx="3" fill={tierColor(tierOf(p.value))} opacity="0.9"/>
+            <text x={x + bw/2} y={height + 22} textAnchor="middle" className="fill-ink-400 dark:fill-ink-300" style={{fontSize:10}}>
+              {p.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function RhythmDots({ data, height=140 }){
+  if (data.length===0) return <div className="text-sm text-ink-400 py-6 text-center">至少 2 条日记后开放</div>;
+  const w = 280, pad = 28;
+  const yMin = 18*60, yMax = 12*60 + 24*60;
+  const yScale = (m) => height - ((m-yMin)/(yMax-yMin))*(height-20) + 8;
+  const xs = (i) => pad + (i+0.5)*((w-pad*2)/data.length);
+  return (
+    <svg viewBox={`0 0 ${w} ${height+30}`} className="w-full">
+      {[20,24,28].map(h => {
+        const y = yScale(h*60);
+        return (
+          <g key={h}>
+            <line x1={pad} x2={w-pad} y1={y} y2={y} stroke="#D8D2C7" strokeDasharray="2 4"/>
+            <text x={pad-4} y={y+3} textAnchor="end" className="fill-ink-400" style={{fontSize:9}}>
+              {h>=24 ? `${h-24}:00` : `${h}:00`}
+            </text>
+          </g>
+        );
+      })}
+      {data.map((p,i) => (
+        <g key={i}>
+          <circle cx={xs(i)} cy={yScale(p.bedMin)} r={5} fill="#65557A" />
+          <rect x={xs(i)-4} y={yScale(p.wakeMin)-4} width={8} height={8} fill="#D7A653" transform={`rotate(45 ${xs(i)} ${yScale(p.wakeMin)})`} />
+          <text x={xs(i)} y={height + 22} textAnchor="middle" className="fill-ink-400 dark:fill-ink-300" style={{fontSize:10}}>{p.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ============================================================
+   呼吸法配置 + 呼吸球
+============================================================ */
+const BREATH_METHODS = [
+  {
+    id:"478", title:"4-7-8 呼吸", subtitle:"睡前主推 · 快速放松", icon:"🫧", defaultMin:5,
+    desc:"用鼻子吸气 4 秒、屏息 7 秒、用嘴呼气 8 秒。激活副交感神经，帮你松下来。",
+    steps:[
+      { phase:"in",      ms:4000, label:"吸气" },
+      { phase:"hold-in", ms:7000, label:"屏息" },
+      { phase:"out",     ms:8000, label:"呼气" }
+    ]
+  },
+  {
+    id:"box", title:"箱式呼吸", subtitle:"4-4-4-4 · 稳定专注", icon:"▢", defaultMin:5,
+    desc:"海军陆战队员的减压法。四个等长阶段，让大脑回到此刻。",
+    steps:[
+      { phase:"in",       ms:4000, label:"吸气" },
+      { phase:"hold-in",  ms:4000, label:"屏息" },
+      { phase:"out",      ms:4000, label:"呼气" },
+      { phase:"hold-out", ms:4000, label:"屏息" }
+    ]
+  },
+  {
+    id:"abd", title:"腹式呼吸", subtitle:"4-6 · 温和入门", icon:"○", defaultMin:6,
+    desc:"把手放在小腹上感受起伏。最容易上手的一种，焦虑高的时候也能做。",
+    steps:[
+      { phase:"in",  ms:4000, label:"吸气 · 让肚子鼓起来" },
+      { phase:"out", ms:6000, label:"呼气 · 让肚子缩回去" }
+    ]
+  },
+  {
+    id:"res", title:"共振呼吸", subtitle:"5.5 次/分钟 · HRV 友好", icon:"～", defaultMin:7,
+    desc:"每分钟约 5.5 次呼吸的节律，被研究认为最容易激活心脏与呼吸的共振。",
+    steps:[
+      { phase:"in",  ms:5500, label:"吸气" },
+      { phase:"out", ms:5500, label:"呼气" }
+    ]
+  }
+];
+const findMethod = (id) => BREATH_METHODS.find(m=>m.id===id) || BREATH_METHODS[0];
+
+function BreathingOrb({ method, running }){
+  const [stepIdx, setStepIdx] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const rafRef = useRef(null);
+  const lastRef = useRef(null);
+  useEffect(() => {
+    if (!running){ lastRef.current = null; return; }
+    const tick = (now) => {
+      if (lastRef.current == null) lastRef.current = now;
+      const dt = now - lastRef.current; lastRef.current = now;
+      setElapsedMs(e => e + dt);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
+  }, [running, stepIdx]);
+  useEffect(() => {
+    const cur = method.steps[stepIdx];
+    if (elapsedMs >= cur.ms){
+      setElapsedMs(0);
+      setStepIdx((stepIdx+1)%method.steps.length);
+    }
+  }, [elapsedMs, stepIdx, method]);
+  useEffect(() => { setStepIdx(0); setElapsedMs(0); }, [method.id]);
+
+  const cur = method.steps[stepIdx];
+  const pr = Math.min(1, elapsedMs / cur.ms);
+  const scale = cur.phase==="in" ? 0.6 + pr*0.4
+               : cur.phase==="out" ? 1 - pr*0.4
+               : cur.phase==="hold-in" ? 1 : 0.6;
+  const remaining = Math.max(0, Math.ceil((cur.ms - elapsedMs)/1000));
+  return (
+    <div className="flex flex-col items-center justify-center select-none">
+      <div className="rounded-full"
+           style={{
+             width:240, height:240,
+             background:"radial-gradient(circle at 30% 30%, #CDBEE0, #65557A)",
+             boxShadow:"0 0 80px rgba(168,152,192,0.3)",
+             transform:`scale(${scale})`,
+             transition:`transform ${cur.ms}ms linear`
+           }}/>
+      <div className="mt-8 text-center">
+        <div className="text-2xl font-medium">{cur.label}</div>
+        <div className="text-base text-ink-400 dark:text-ink-300 mt-1">{remaining} 秒</div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Hotline / RiskBanner
+============================================================ */
+function HotlineDialog({ onClose }){
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-soft p-6 w-full max-w-sm space-y-4 shadow-soft" onClick={(e)=>e.stopPropagation()}>
+        <div>
+          <div className="text-lg font-semibold">心理援助热线</div>
+          <div className="text-sm text-ink-500 dark:text-ink-300 mt-1">如果情绪很糟糕，请尝试拨打。这些热线 24 小时都在。</div>
+        </div>
+        <ul className="space-y-2">
+          {HOTLINES.map(h => (
+            <li key={h.phone} className="flex items-center justify-between p-3 rounded-soft border border-ink-100 dark:border-ink-700">
+              <div>
+                <div className="font-medium">{h.name}</div>
+                <div className="text-xs text-ink-400 dark:text-ink-300">{h.note}</div>
+              </div>
+              <a href={`tel:${h.phone.replace(/-/g,"")}`} className="text-moon-600 dark:text-moon-200 font-medium">{h.phone}</a>
+            </li>
+          ))}
+        </ul>
+        <Button block variant="outline" onClick={onClose}>关闭</Button>
+      </div>
+    </div>
+  );
+}
+
+function RiskBanner({ flag }){
+  const { ackRiskFlag } = useStore();
+  const [show, setShow] = useState(false);
+  const urgent = flag.level === "urgent";
+  return (
+    <>
+      <div className={cls(
+        "rounded-soft p-4 border",
+        urgent ? "bg-amber-100 dark:bg-amber-500/20 border-amber-300"
+               : "bg-moon-50 dark:bg-moon-700/30 border-moon-200 dark:border-moon-700"
+      )}>
+        <div className="text-sm font-medium mb-1.5">{urgent ? "我们想多陪你一会儿" : "一点温和的提醒"}</div>
+        <div className="text-sm leading-relaxed text-ink-700 dark:text-ink-100">{flag.message}</div>
+        <div className="flex gap-2 mt-3 flex-wrap">
+          <button onClick={()=>setShow(true)}
+            className={cls("px-4 py-1.5 rounded-pill text-sm font-medium",
+              urgent ? "bg-amber-300 text-ink-900" : "bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900")}>
+            {urgent ? "立即拨打热线" : "查看资源"}
+          </button>
+          <button onClick={()=>ackRiskFlag(flag.flagId)} className="px-4 py-1.5 rounded-pill text-sm text-ink-500 dark:text-ink-300">我知道了</button>
+        </div>
+      </div>
+      {show && <HotlineDialog onClose={()=>setShow(false)}/>}
+    </>
+  );
+}
+
+/* ============================================================
+   Pages: Onboarding
+============================================================ */
+const ONBOARDING_SLIDES = [
+  { title:"一晚比一晚好", body:"我们不追求一夜睡 8 小时，只想陪你慢慢往前走。每天 60 秒的记录，会变成你看得懂的睡眠地图。" },
+  { title:"把方法递到你手里", body:"呼吸训练、刺激控制、睡眠卫生……都是经过研究的简单方法。每天给你 1–3 件能做的事，不堆砌。" },
+  { title:"数据留在你这里", body:"睡眠记录默认存储在本地，不强制注册、不推送广告。你随时可以一键清空。" },
+  { title:"我们不替代医生", body:"这是一款生活方式工具，不能用于诊断或治疗。如果你的失眠已经持续很久或伴随其他困扰，请联系睡眠科或心理科。" }
+];
+
+function OnboardingIntro({ onDone }){
+  const [step, setStep] = useState(0);
+  const [accepted, setAccepted] = useState(false);
+  const last = step === ONBOARDING_SLIDES.length - 1;
+  return (
+    <div className="min-h-dvh px-6 pt-16 pb-10 flex flex-col">
+      <div className="flex gap-1.5 mb-10">
+        {ONBOARDING_SLIDES.map((_,i) => (
+          <div key={i} className={cls("h-1 flex-1 rounded-full", i<=step?"bg-moon-400 dark:bg-moon-300":"bg-ink-100 dark:bg-ink-700")}/>
+        ))}
+      </div>
+      <div className="flex-1">
+        <h1 className="text-3xl font-medium leading-snug">{ONBOARDING_SLIDES[step].title}</h1>
+        <p className="text-base leading-relaxed text-ink-500 dark:text-ink-200 mt-6">{ONBOARDING_SLIDES[step].body}</p>
+      </div>
+      {last && (
+        <label className="flex items-start gap-3 mb-6 text-sm text-ink-500 dark:text-ink-300">
+          <input type="checkbox" checked={accepted} onChange={(e)=>setAccepted(e.target.checked)} className="mt-1 accent-moon-500"/>
+          <span>我已阅读并理解：本应用是生活方式工具，不替代医生，不能用于诊断或治疗。</span>
+        </label>
+      )}
+      <div className="flex gap-3">
+        {step>0 && <Button variant="ghost" onClick={()=>setStep(step-1)}>上一步</Button>}
+        {!last && <Button block onClick={()=>setStep(step+1)}>继续</Button>}
+        {last && <Button block disabled={!accepted} onClick={onDone}>填写我的睡眠档案</Button>}
+      </div>
+    </div>
+  );
+}
+
+function OnboardingProfile({ onDone }){
+  const { setProfile, addRiskFlag } = useStore();
+  const [step, setStep] = useState(0);
+  const [nickname, setNickname] = useState("");
+  const [gender, setGender] = useState(null);
+  const [ageRange, setAgeRange] = useState(null);
+  const [bedtime, setBedtime] = useState("23:30");
+  const [waketime, setWaketime] = useState("07:00");
+  const [targetMin, setTargetMin] = useState(450);
+  const [troubleTypes, setTroubleTypes] = useState([]);
+  const [troubleDuration, setTroubleDuration] = useState(null);
+  const [severity, setSeverity] = useState(3);
+  const [workPattern, setWorkPattern] = useState(null);
+  const total = 6;
+  const next = () => setStep(s=>Math.min(total-1, s+1));
+  const prev = () => setStep(s=>Math.max(0, s-1));
+
+  const submit = () => {
+    const profile = {
+      userId: uid(),
+      createdAt: new Date().toISOString(),
+      nickname: nickname.trim() || undefined,
+      gender, ageRange, targetBedtime: bedtime, targetWakeTime: waketime,
+      targetSleepMin: targetMin,
+      troubleTypes: troubleTypes.length ? troubleTypes : ["unknown"],
+      troubleDuration: troubleDuration || "lt_1m",
+      severity, workPattern,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      locale: "zh-CN",
+      disclaimerAcceptedAt: new Date().toISOString()
+    };
+    setProfile(profile);
+    const flags = checkInitialRisk(profile);
+    flags.forEach(f => addRiskFlag({ flagId: uid(), userId: profile.userId, acknowledged: false, triggeredAt: new Date().toISOString(), ...f }));
+    onDone();
+  };
+
+  const valid = (() => {
+    if (step===1) return ageRange != null;
+    if (step===4) return troubleDuration != null;
+    return true;
+  })();
+
+  return (
+    <div className="min-h-dvh px-6 pt-12 pb-10">
+      <div className="flex gap-1.5 mb-8">
+        {Array.from({length:total}).map((_,i) => (
+          <div key={i} className={cls("h-1 flex-1 rounded-full", i<=step?"bg-moon-400 dark:bg-moon-300":"bg-ink-100 dark:bg-ink-700")}/>
+        ))}
+      </div>
+
+      {step===0 && (
+        <section className="space-y-5">
+          <h1 className="text-2xl font-medium">怎么称呼你？</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">可以用任意名字，也可以留空。我们不会向外发送。</p>
+          <input type="text" placeholder="比如：小月亮" value={nickname} onChange={(e)=>setNickname(e.target.value)}
+            className="w-full px-4 py-3 rounded-soft bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-base"/>
+        </section>
+      )}
+
+      {step===1 && (
+        <section className="space-y-5">
+          <h1 className="text-2xl font-medium">一些基础信息</h1>
+          <div>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-2">你的年龄段</div>
+            <SelectGroup options={[
+              {value:"18-24",label:"18–24"},{value:"25-34",label:"25–34"},
+              {value:"35-44",label:"35–44"},{value:"45-54",label:"45–54"},{value:"55+",label:"55 +"}
+            ]} value={ageRange} onChange={setAgeRange} columns={3}/>
+          </div>
+          <div>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-2">性别（可选）</div>
+            <SelectGroup options={[
+              {value:"female",label:"女"},{value:"male",label:"男"},
+              {value:"other",label:"其他"},{value:"prefer_not",label:"不想说"}
+            ]} value={gender} onChange={setGender} columns={2}/>
+          </div>
+        </section>
+      )}
+
+      {step===2 && (
+        <section className="space-y-6">
+          <h1 className="text-2xl font-medium">你期望的作息</h1>
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">希望的上床时间</div>
+            <input type="time" value={bedtime} onChange={(e)=>setBedtime(e.target.value)}
+              className="w-full text-2xl bg-transparent outline-none"/>
+          </Card>
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">希望的起床时间</div>
+            <input type="time" value={waketime} onChange={(e)=>setWaketime(e.target.value)}
+              className="w-full text-2xl bg-transparent outline-none"/>
+          </Card>
+          <Card>
+            <Slider label="希望每天睡多少" min={300} max={600} step={15} value={targetMin} onChange={setTargetMin}
+              formatValue={(v)=>`${Math.floor(v/60)} 小时${v%60?` ${v%60} 分钟`:""}`}/>
+          </Card>
+        </section>
+      )}
+
+      {step===3 && (
+        <section className="space-y-5">
+          <h1 className="text-2xl font-medium">最让你困扰的是？</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">可以多选。如果不确定，也可以选「我也说不清」。</p>
+          <SelectGroup multiple options={[
+            {value:"hard_to_fall_asleep",label:"入睡困难"},
+            {value:"easy_to_wake",label:"半夜易醒"},
+            {value:"early_wake",label:"早醒"},
+            {value:"many_dreams",label:"多梦"},
+            {value:"snoring",label:"打鼾"},
+            {value:"unknown",label:"我也说不清"}
+          ]} value={troubleTypes} onChange={setTroubleTypes} columns={2}/>
+        </section>
+      )}
+
+      {step===4 && (
+        <section className="space-y-6">
+          <h1 className="text-2xl font-medium">这些困扰持续多久了？</h1>
+          <SelectGroup options={[
+            {value:"lt_1m",label:"不到 1 个月"},
+            {value:"1_3m",label:"1–3 个月"},
+            {value:"3_6m",label:"3–6 个月"},
+            {value:"6_12m",label:"6–12 个月"},
+            {value:"gt_1y",label:"1 年以上"}
+          ]} value={troubleDuration} onChange={setTroubleDuration} columns={1}/>
+          <Card>
+            <Slider label="主观严重程度（1 = 轻微，5 = 严重影响生活）" min={1} max={5} value={severity} onChange={setSeverity}
+              formatValue={(v)=>`${v} / 5`}/>
+          </Card>
+        </section>
+      )}
+
+      {step===5 && (
+        <section className="space-y-5">
+          <h1 className="text-2xl font-medium">你的工作模式</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">这有助于我们给你更贴合的作息建议。</p>
+          <SelectGroup options={[
+            {value:"fixed",label:"固定作息（朝九晚五）"},
+            {value:"flexible",label:"弹性时间"},
+            {value:"shift",label:"倒班/夜班"},
+            {value:"student",label:"学生"},
+            {value:"freelance",label:"自由职业"}
+          ]} value={workPattern} onChange={setWorkPattern} columns={1}/>
+        </section>
+      )}
+
+      <div className="mt-10 flex gap-3">
+        {step>0 && <Button variant="ghost" onClick={prev}>上一步</Button>}
+        {step<total-1 && <Button block disabled={!valid} onClick={next}>下一步</Button>}
+        {step===total-1 && <Button block onClick={submit}>完成，开始陪伴</Button>}
+      </div>
+    </div>
+  );
+}
+
+function Onboarding({ onDone }){
+  const [phase, setPhase] = useState("intro");
+  if (phase === "intro") return <OnboardingIntro onDone={()=>setPhase("profile")}/>;
+  if (phase === "profile") return <OnboardingProfile onDone={()=>setPhase("plan-rec")}/>;
+  return <PlanRecPage onDone={onDone}/>;
+}
+
+/* ============================================================
+   Pages: Home
+============================================================ */
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h<5) return "夜深了";
+  if (h<11) return "早安";
+  if (h<14) return "午安";
+  if (h<18) return "下午好";
+  return "晚安";
+};
+
+function HomePage({ onNav, onChooseBreath }){
+  const { state, addInsights } = useStore();
+  const { profile, diaries, scores, insights, riskFlags, plan, planTasks } = state;
+
+  const lastDiary = useMemo(() => {
+    if (diaries.length===0) return null;
+    return [...diaries].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  }, [diaries]);
+  const lastScore = useMemo(() => scores.find(s=>s.diaryId===lastDiary?.diaryId), [scores, lastDiary]);
+
+  const today = todayStr();
+  useEffect(() => {
+    if (!profile || diaries.length===0) return;
+    if (insights.some(i=>i.date===today)) return;
+    const fresh = evaluateRules(profile, diaries, insights);
+    if (fresh.length) addInsights(fresh);
+  }, [profile?.userId, diaries.length]);
+
+  const todayInsights = insights.filter(i => i.date===today);
+  const activeFlags = riskFlags.filter(f => !f.acknowledged);
+
+  const todayPlanTasks = useMemo(() => {
+    if (!plan) return [];
+    const day = planDayIndex(plan);
+    return planTasks.filter(t => t.dayIndex === day);
+  }, [plan, planTasks]);
+
+  return (
+    <div className="px-5 pt-10 space-y-5">
+      <header>
+        <div className="text-sm text-ink-400 dark:text-ink-300">
+          {greeting()}{profile.nickname ? `，${profile.nickname}` : ""}
+        </div>
+        <h1 className="text-2xl font-medium mt-1">今天对自己温柔一点</h1>
+      </header>
+
+      {activeFlags.map(f => <RiskBanner key={f.flagId} flag={f}/>)}
+
+      <Card>
+        {lastDiary && lastScore ? (
+          <button onClick={()=>onNav("reports")} className="block w-full">
+            <ScoreArc score={lastScore.total}/>
+            <p className="text-sm leading-relaxed text-ink-500 dark:text-ink-300 mt-3 px-2 text-left">{lastScore.insight}</p>
+            <div className="text-xs text-ink-400 dark:text-ink-300 mt-3 text-right">{fmtMD(lastDiary.date)} 的睡眠 →</div>
+          </button>
+        ) : (
+          <div className="text-center py-6 space-y-3">
+            <div className="text-base">还没有睡眠记录</div>
+            <p className="text-sm text-ink-500 dark:text-ink-300">第一份睡眠日记 60 秒可以填完，慢慢来。</p>
+            <Button onClick={()=>onNav("diary-new")}>开始记录昨晚</Button>
+          </div>
+        )}
+      </Card>
+
+      {todayInsights.length>0 && (
+        <section className="space-y-3">
+          <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">今天的小建议</div>
+          {todayInsights.map(i => (
+            <Card key={i.insightId} className={cls("border-l-4",
+              i.severity==="warning"?"border-l-amber-300":i.severity==="suggest"?"border-l-moon-300":"border-l-ink-300")}>
+              <div className="text-base text-ink-700 dark:text-ink-100 leading-relaxed">{i.message}</div>
+            </Card>
+          ))}
+        </section>
+      )}
+
+      {todayPlanTasks.length>0 && (
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">今日计划</div>
+            <button onClick={()=>onNav("plan")} className="text-xs text-moon-600 dark:text-moon-200">查看全部 →</button>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {todayPlanTasks.map(t => (
+              <li key={t.taskId} className="flex items-start gap-2 text-sm">
+                <span className={t.done?"text-score-high":"text-ink-300 dark:text-ink-600"}>{t.done?"●":"○"}</span>
+                <div className={t.done?"line-through text-ink-400":""}>{t.title}</div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <section className="grid grid-cols-2 gap-3">
+        <button onClick={()=>onChooseBreath("478")} className="text-left">
+          <Card className="h-full">
+            <div className="text-3xl">🫧</div>
+            <div className="text-base font-medium mt-2">4-7-8 呼吸</div>
+            <div className="text-xs text-ink-400 dark:text-ink-300 mt-1">5 分钟·快速放松</div>
+          </Card>
+        </button>
+        <button onClick={()=>onNav("sounds")} className="text-left">
+          <Card className="h-full">
+            <div className="text-3xl">♪</div>
+            <div className="text-base font-medium mt-2">助眠音频</div>
+            <div className="text-xs text-ink-400 dark:text-ink-300 mt-1">低频陪伴</div>
+          </Card>
+        </button>
+      </section>
+
+      <Button block size="lg" variant="outline" onClick={()=>onNav("diary-new")}>
+        {lastDiary?.date===today ? "再补充一些细节" : "记录昨晚的睡眠"}
+      </Button>
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Diary List + New
+============================================================ */
+function DiaryListPage({ onNav }){
+  const { state } = useStore();
+  const sorted = [...state.diaries].sort((a,b)=>b.date.localeCompare(a.date));
+  return (
+    <div className="px-5 pt-10 pb-10 space-y-4">
+      <header>
+        <h1 className="text-2xl font-medium">睡眠日记</h1>
+        <p className="text-sm text-ink-500 dark:text-ink-300 mt-1">每天 60 秒，慢慢看清自己的睡眠模式。</p>
+      </header>
+      <Button block size="lg" onClick={()=>onNav("diary-new")}>记录一晚的睡眠</Button>
+      {sorted.length===0 ? (
+        <Card className="text-center py-10 text-ink-400 dark:text-ink-300">还没有记录，从昨晚开始吧。</Card>
+      ) : (
+        <div className="space-y-3">
+          {sorted.map(d => {
+            const sc = state.scores.find(s=>s.diaryId===d.diaryId);
+            return (
+              <Card key={d.diaryId}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-base font-medium">{fmtMD(d.date)}</div>
+                    <div className="text-xs text-ink-400 dark:text-ink-300 mt-1">
+                      {fmtHM(new Date(d.bedtime))} → {fmtHM(new Date(d.wakeTime))}
+                      {" · "}{Math.floor(d.totalSleepMin/60)}h{d.totalSleepMin%60}m
+                    </div>
+                  </div>
+                  {sc && <div className="text-2xl font-medium text-moon-600 dark:text-moon-200">{sc.total}</div>}
+                </div>
+                {d.note && <div className="text-sm text-ink-500 dark:text-ink-300 mt-2 line-clamp-2">{d.note}</div>}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const LATENCY_BUCKETS = [
+  { value:"lt15", label:"< 15 分钟", mid:8 },
+  { value:"15_30", label:"15–30 分钟", mid:22 },
+  { value:"30_60", label:"30–60 分钟", mid:45 },
+  { value:"gt60", label:"> 60 分钟", mid:80 }
+];
+const WAKE_DUR_BUCKETS = [
+  { value:"0", label:"几乎没有", mid:0 },
+  { value:"lt5", label:"< 5 分钟", mid:3 },
+  { value:"5_20", label:"5–20 分钟", mid:12 },
+  { value:"20_60", label:"20–60 分钟", mid:40 },
+  { value:"gt60", label:"> 60 分钟", mid:80 }
+];
+const SCREEN_BUCKETS = [
+  { value:"in_bed", label:"在床上一直看到睡前", mid:0 },
+  { value:"lt15", label:"上床前 0–15 分钟", mid:8 },
+  { value:"15_30", label:"上床前 15–30 分钟", mid:22 },
+  { value:"30_60", label:"上床前 30–60 分钟", mid:45 },
+  { value:"gt60", label:"上床前 1 小时以上", mid:90 },
+  { value:"none", label:"睡前没看屏幕", mid:240 }
+];
+const NAP_BUCKETS = [
+  { value:"none", label:"没午睡", mid:0 },
+  { value:"short", label:"≤ 20 分钟", mid:15 },
+  { value:"standard", label:"20–45 分钟", mid:30 },
+  { value:"long", label:"> 45 分钟", mid:60 }
+];
+
+function nightDate(d){
+  if (d.getHours() < 12) return fmtDate(subDays(d, 1));
+  return fmtDate(d);
+}
+
+function DiaryNewPage({ onDone }){
+  const { state, addDiary, addRiskFlag } = useStore();
+  const profile = state.profile;
+  const [step, setStep] = useState(0);
+
+  const yesterday = subDays(new Date(), 1);
+  const [bedDate, setBedDate] = useState(fmtDate(yesterday));
+  const [bedTime, setBedTime] = useState(profile.targetBedtime);
+  const [wakeDate, setWakeDate] = useState(fmtDate(new Date()));
+  const [wakeTime, setWakeTime] = useState(profile.targetWakeTime);
+  const [latency, setLatency] = useState("15_30");
+  const [wakeCount, setWakeCount] = useState(0);
+  const [wakeDur, setWakeDur] = useState("0");
+  const [quality, setQuality] = useState(3);
+  const [morningState, setMorningState] = useState("ok");
+  const [moods, setMoods] = useState([]);
+  const [stress, setStress] = useState(3);
+  const [caffeine, setCaffeine] = useState("none");
+  const [alcohol, setAlcohol] = useState("none");
+  const [exercise, setExercise] = useState("none");
+  const [screen, setScreen] = useState("lt15");
+  const [nap, setNap] = useState("none");
+  const [note, setNote] = useState("");
+
+  const bed = useMemo(()=>new Date(`${bedDate}T${bedTime}:00`), [bedDate, bedTime]);
+  const wake = useMemo(()=>new Date(`${wakeDate}T${wakeTime}:00`), [wakeDate, wakeTime]);
+  const latMid = LATENCY_BUCKETS.find(b=>b.value===latency).mid;
+  const wakeMid = WAKE_DUR_BUCKETS.find(b=>b.value===wakeDur).mid;
+  const screenMid = SCREEN_BUCKETS.find(b=>b.value===screen).mid;
+  const napMid = NAP_BUCKETS.find(b=>b.value===nap).mid;
+  const computed = useMemo(()=>computeTimes(bed, wake, latMid, wakeMid), [bed, wake, latMid, wakeMid]);
+
+  const total = 6;
+  const next = () => setStep(s=>Math.min(total-1, s+1));
+  const prev = () => setStep(s=>Math.max(0, s-1));
+
+  const submit = () => {
+    const dateStr = nightDate(bed);
+    const lastScreenTime = screen === "none"
+      ? undefined
+      : new Date(bed.getTime() - screenMid * 60 * 1000).toISOString();
+    const diary = {
+      diaryId: uid(),
+      userId: profile.userId,
+      date: dateStr,
+      bedtime: bed.toISOString(),
+      sleepLatencyMin: latMid,
+      wakeCount,
+      wakeDurationMin: wakeMid,
+      wakeTime: wake.toISOString(),
+      timeInBedMin: computed.timeInBedMin,
+      totalSleepMin: computed.totalSleepMin,
+      sleepEfficiency: computed.sleepEfficiency,
+      subjectiveQuality: quality,
+      morningState,
+      moodTags: moods,
+      stressLevel: stress,
+      caffeine,
+      alcohol,
+      exercise,
+      lastScreenTime,
+      napMin: napMid,
+      note: note || undefined,
+      source: "manual",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const recent = [...state.diaries].sort((a,b)=>a.date.localeCompare(b.date)).slice(-7);
+    const score = calcScore(diary, profile, recent);
+    addDiary(diary, score);
+    if (containsSelfHarm(note)){
+      addRiskFlag({
+        flagId: uid(), userId: profile.userId, acknowledged: false,
+        triggeredAt: new Date().toISOString(),
+        ruleId:"SELFHARM_KEYWORD", level:"urgent",
+        message:"看见你写下的话有点担心你。如果情绪很糟糕，请考虑立刻拨打心理援助热线，他们 24 小时都在。"
+      });
+    }
+    onDone();
+  };
+
+  const valid = step===0 ? bed < wake : true;
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-6">
+      <div className="flex gap-1.5">
+        {Array.from({length:total}).map((_,i)=>(
+          <div key={i} className={cls("h-1 flex-1 rounded-full", i<=step?"bg-moon-400 dark:bg-moon-300":"bg-ink-100 dark:bg-ink-700")}/>
+        ))}
+      </div>
+
+      {step===0 && (
+        <section className="space-y-5">
+          <h1 className="text-xl font-medium">昨晚的卧床时间</h1>
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">上床时间</div>
+            <div className="flex gap-3">
+              <input type="date" value={bedDate} onChange={(e)=>setBedDate(e.target.value)} className="text-base bg-transparent outline-none flex-1"/>
+              <input type="time" value={bedTime} onChange={(e)=>setBedTime(e.target.value)} className="text-base bg-transparent outline-none"/>
+            </div>
+          </Card>
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">起床时间</div>
+            <div className="flex gap-3">
+              <input type="date" value={wakeDate} onChange={(e)=>setWakeDate(e.target.value)} className="text-base bg-transparent outline-none flex-1"/>
+              <input type="time" value={wakeTime} onChange={(e)=>setWakeTime(e.target.value)} className="text-base bg-transparent outline-none"/>
+            </div>
+          </Card>
+          <div className="text-xs text-ink-400 dark:text-ink-300">预计卧床：{Math.floor(computed.timeInBedMin/60)}h{computed.timeInBedMin%60}m</div>
+        </section>
+      )}
+
+      {step===1 && (
+        <section className="space-y-5">
+          <h1 className="text-xl font-medium">大约多久睡着？</h1>
+          <SelectGroup options={LATENCY_BUCKETS.map(b=>({value:b.value,label:b.label}))} value={latency} onChange={setLatency} columns={2}/>
+          <h2 className="text-xl font-medium pt-4">夜里醒来几次？</h2>
+          <SelectGroup options={[
+            {value:"0",label:"0 次"},{value:"1",label:"1 次"},{value:"2",label:"2 次"},{value:"3",label:"3 次或以上"}
+          ]} value={String(wakeCount)} onChange={(v)=>setWakeCount(Number(v))} columns={4}/>
+          {wakeCount>0 && (
+            <>
+              <h2 className="text-base font-medium pt-2">夜醒累计大约多长时间？</h2>
+              <SelectGroup options={WAKE_DUR_BUCKETS.map(b=>({value:b.value,label:b.label}))} value={wakeDur} onChange={setWakeDur} columns={2}/>
+            </>
+          )}
+        </section>
+      )}
+
+      {step===2 && (
+        <section className="space-y-6">
+          <h1 className="text-xl font-medium">主观感受</h1>
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-3">昨晚的睡眠质量</div>
+            <Stars value={quality} onChange={setQuality} size="lg"/>
+          </Card>
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">起床后的状态</div>
+            <SelectGroup options={[
+              {value:"fresh",label:"精神"},{value:"ok",label:"一般"},
+              {value:"tired",label:"疲惫"},{value:"exhausted",label:"极度疲惫"}
+            ]} value={morningState} onChange={setMorningState} columns={4}/>
+          </div>
+        </section>
+      )}
+
+      {step===3 && (
+        <section className="space-y-5">
+          <h1 className="text-xl font-medium">今天的状态</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">可以多选，也可以全都不选。</p>
+          <SelectGroup multiple options={[
+            {value:"happy",label:"开心"},{value:"calm",label:"平静"},{value:"anxious",label:"焦虑"},
+            {value:"low",label:"低落"},{value:"irritable",label:"烦躁"},{value:"stressed",label:"压力大"}
+          ]} value={moods} onChange={setMoods} columns={3}/>
+          <Card>
+            <Slider label="昨天的压力水平" min={1} max={5} value={stress} onChange={setStress} formatValue={(v)=>`${v} / 5`}/>
+          </Card>
+        </section>
+      )}
+
+      {step===4 && (
+        <section className="space-y-5">
+          <h1 className="text-xl font-medium">回顾昨天</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">
+            这些行为常常影响夜里的睡眠。可以快速勾选，跳过也行。
+          </p>
+
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">咖啡因</div>
+            <SelectGroup options={[
+              {value:"none",label:"无"},{value:"morning",label:"仅上午"},
+              {value:"afternoon",label:"下午有"},{value:"evening",label:"傍晚后"}
+            ]} value={caffeine} onChange={setCaffeine} columns={4}/>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">饮酒</div>
+            <SelectGroup options={[
+              {value:"none",label:"无"},{value:"mild",label:"少量"},{value:"heavy",label:"较多"}
+            ]} value={alcohol} onChange={setAlcohol} columns={3}/>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">运动</div>
+            <SelectGroup options={[
+              {value:"none",label:"无"},{value:"light",label:"轻"},
+              {value:"moderate",label:"中"},{value:"intense",label:"强"}
+            ]} value={exercise} onChange={setExercise} columns={4}/>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">睡前最后看屏幕</div>
+            <SelectGroup options={SCREEN_BUCKETS.map(b=>({value:b.value,label:b.label}))}
+              value={screen} onChange={setScreen} columns={1}/>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm text-ink-500 dark:text-ink-300">昨天午睡</div>
+            <SelectGroup options={NAP_BUCKETS.map(b=>({value:b.value,label:b.label}))}
+              value={nap} onChange={setNap} columns={4}/>
+          </div>
+        </section>
+      )}
+
+      {step===5 && (
+        <section className="space-y-4">
+          <h1 className="text-xl font-medium">想多说一些吗？</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300">备注仅本地保存，不会上传。</p>
+          <textarea value={note} onChange={(e)=>setNote(e.target.value)} rows={5} maxLength={500}
+            placeholder="比如：今天有点担心明天的会议……"
+            className="w-full px-4 py-3 rounded-soft bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-base resize-none"/>
+        </section>
+      )}
+
+      <div className="flex gap-3 pt-4">
+        {step>0 && <Button variant="ghost" onClick={prev}>上一步</Button>}
+        {step<total-1 && <Button block disabled={!valid} onClick={next}>继续</Button>}
+        {step===total-1 && <Button block onClick={submit}>完成今天的记录</Button>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Reports
+============================================================ */
+function ReportsPage(){
+  const { state } = useStore();
+  const [range, setRange] = useState("week");
+  const sorted = useMemo(()=>[...state.diaries].sort((a,b)=>a.date.localeCompare(b.date)), [state.diaries]);
+  const last = sorted[sorted.length-1] || null;
+  const lastScore = last ? state.scores.find(s=>s.diaryId===last.diaryId) : null;
+
+  const since = subDays(new Date(), 6);
+  const last7 = sorted.filter(d => new Date(d.date) >= since);
+  const trend = last7.map(d => {
+    const sc = state.scores.find(s=>s.diaryId===d.diaryId);
+    return { label: d.date.slice(5).replace("-","/"), value: sc?.total || 0 };
+  });
+  const rhythm = last7.map(d => {
+    const bed = new Date(d.bedtime), wake = new Date(d.wakeTime);
+    const minOf = (D) => D.getHours()*60 + D.getMinutes();
+    let bedMin = minOf(bed), wakeMin = minOf(wake);
+    if (bedMin < 12*60) bedMin += 24*60;
+    if (wakeMin < 12*60) wakeMin += 24*60;
+    return { label: d.date.slice(5).replace("-","/"), bedMin, wakeMin };
+  });
+
+  const avg = (arr, fn) => arr.length===0?0: arr.reduce((s,x)=>s+fn(x),0)/arr.length;
+  const avgDur = avg(last7, d=>d.totalSleepMin)/60;
+  const avgEff = avg(last7, d=>d.sleepEfficiency);
+  const avgScore = (() => {
+    const ids = new Set(last7.map(d=>d.diaryId));
+    const arr = state.scores.filter(s=>ids.has(s.diaryId));
+    return arr.length===0?0:Math.round(arr.reduce((s,x)=>s+x.total,0)/arr.length);
+  })();
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header>
+        <h1 className="text-2xl font-medium">睡眠报告</h1>
+        <div className="flex gap-2 mt-3">
+          <button onClick={()=>setRange("day")} className={cls("px-4 py-1.5 rounded-pill text-sm",
+            range==="day"?"bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900":"bg-ink-100 dark:bg-ink-700 text-ink-500 dark:text-ink-200")}>日报</button>
+          <button onClick={()=>setRange("week")} className={cls("px-4 py-1.5 rounded-pill text-sm",
+            range==="week"?"bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900":"bg-ink-100 dark:bg-ink-700 text-ink-500 dark:text-ink-200")}>周报</button>
+        </div>
+      </header>
+
+      {!last && (
+        <Card className="text-center py-8 text-ink-400 dark:text-ink-300">
+          还没有睡眠记录
+        </Card>
+      )}
+
+      {range==="day" && last && lastScore && (
+        <>
+          <Card className="space-y-4">
+            <div className="text-xs text-ink-400 dark:text-ink-300">{fmtMD(last.date)}</div>
+            <ScoreArc score={lastScore.total}/>
+            <p className="text-sm text-ink-500 dark:text-ink-300 leading-relaxed">{lastScore.insight}</p>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-3">六维度细分</div>
+            <ul className="space-y-3">
+              {[["时长",lastScore.durationScore],["效率",lastScore.efficiencyScore],["入睡潜伏",lastScore.latencyScore],
+                ["夜醒",lastScore.awakeningScore],["主观",lastScore.subjectiveScore],["规律性",lastScore.regularityScore]].map(([l,v])=>(
+                <li key={l}>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-ink-500 dark:text-ink-300">{l}</span>
+                    <span className="font-medium">{v}</span>
+                  </div>
+                  <div className="h-1.5 mt-1 bg-ink-100 dark:bg-ink-700 rounded-full">
+                    <div className="h-1.5 bg-moon-400 dark:bg-moon-300 rounded-full" style={{width:`${v}%`}}/>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-2">细节</div>
+            <dl className="text-sm space-y-1.5">
+              <div className="flex justify-between"><dt className="text-ink-500 dark:text-ink-300">上床</dt><dd>{fmtHM(new Date(last.bedtime))}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-500 dark:text-ink-300">起床</dt><dd>{fmtHM(new Date(last.wakeTime))}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-500 dark:text-ink-300">入睡耗时</dt><dd>{last.sleepLatencyMin} 分钟</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-500 dark:text-ink-300">夜醒</dt><dd>{last.wakeCount} 次 · {last.wakeDurationMin} 分钟</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-500 dark:text-ink-300">睡眠效率</dt><dd>{Math.round(last.sleepEfficiency*100)}%</dd></div>
+            </dl>
+          </Card>
+        </>
+      )}
+
+      {range==="week" && last && (
+        <>
+          <Card>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div><div className="text-xs text-ink-400">平均时长</div><div className="text-xl font-medium mt-1">{avgDur.toFixed(1)}h</div></div>
+              <div><div className="text-xs text-ink-400">平均效率</div><div className="text-xl font-medium mt-1">{Math.round(avgEff*100)}%</div></div>
+              <div><div className="text-xs text-ink-400">平均分</div><div className="text-xl font-medium mt-1">{avgScore}</div></div>
+            </div>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-2">最近 7 晚分数</div>
+            <MiniBarChart points={trend}/>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-2">作息节律</div>
+            <RhythmDots data={rhythm}/>
+            <div className="text-xs text-ink-400 dark:text-ink-300 mt-2">● 上床 ◆ 起床 — 散点越聚拢，节律越稳定。</div>
+          </Card>
+          {state.insights.length>0 && (
+            <Card>
+              <div className="text-sm font-medium mb-3">本周洞察</div>
+              <ul className="space-y-2">
+                {state.insights.slice(-5).map(i => (
+                  <li key={i.insightId} className="text-sm text-ink-700 dark:text-ink-100 leading-relaxed">· {i.message}</li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Plan
+============================================================ */
+function PlanPage(){
+  const { state, setPlan, toggleTask } = useStore();
+  const profile = state.profile;
+  const active = state.plan && state.plan.status==="active" ? state.plan : null;
+
+  if (!active){
+    return (
+      <div className="px-5 pt-10 pb-12 space-y-5">
+        <header>
+          <h1 className="text-2xl font-medium">21 天计划</h1>
+          <p className="text-sm text-ink-500 dark:text-ink-300 mt-1">一次只调整一件小事，循序渐进。</p>
+        </header>
+        <Card className="space-y-3">
+          <div className="text-base font-medium">基础睡眠改善计划（21 天）</div>
+          <div className="text-sm text-ink-500 dark:text-ink-300 leading-relaxed">
+            第 1 周：建立固定起床时间。<br/>
+            第 2 周：刺激控制 — 让大脑重新把床和睡眠联系起来。<br/>
+            第 3 周：睡眠卫生与睡前放松。
+          </div>
+          <Button block onClick={()=>{
+            const { plan, tasks } = createPlan(profile.userId);
+            setPlan(plan, tasks);
+          }}>加入这个计划</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const dayIndex = planDayIndex(active);
+  const tasks = state.planTasks;
+  const tasksByDay = new Map();
+  tasks.forEach(t => {
+    if (!tasksByDay.has(t.dayIndex)) tasksByDay.set(t.dayIndex, []);
+    tasksByDay.get(t.dayIndex).push(t);
+  });
+  const todayTasks = tasksByDay.get(dayIndex) || [];
+  const weekIdx = Math.min(2, Math.floor((dayIndex-1)/7));
+  const weekFocus = active.weeklyFocus[weekIdx];
+  const doneCount = tasks.filter(t=>t.done).length;
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header>
+        <h1 className="text-2xl font-medium">21 天计划</h1>
+        <div className="text-sm text-ink-500 dark:text-ink-300 mt-1">第 {dayIndex} 天 · 本周主题：{weekFocus}</div>
+      </header>
+
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-ink-400">已完成</div>
+            <div className="text-2xl font-medium mt-1">{doneCount}<span className="text-sm text-ink-400"> / 21</span></div>
+          </div>
+          <div className="text-sm text-ink-500 dark:text-ink-300">一次专注一件小事即可</div>
+        </div>
+        <div className="mt-3 h-1.5 bg-ink-100 dark:bg-ink-700 rounded-full">
+          <div className="h-1.5 bg-moon-400 dark:bg-moon-300 rounded-full" style={{width:`${(doneCount/21)*100}%`}}/>
+        </div>
+      </Card>
+
+      <section className="space-y-3">
+        <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">今天的微任务</div>
+        {todayTasks.length===0 ? (
+          <Card className="text-ink-400 text-center py-8">今天没有特别安排，给自己一些喘息的空间也很好。</Card>
+        ) : todayTasks.map(t => (
+          <button key={t.taskId} onClick={()=>toggleTask(t.taskId)} className="w-full text-left">
+            <Card className={cls("transition", t.done && "bg-moon-50 dark:bg-moon-700/30")}>
+              <div className="flex items-start gap-3">
+                <div className={cls("mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center",
+                  t.done ? "bg-score-high border-score-high text-white" : "border-ink-300 dark:border-ink-600")}>
+                  {t.done && <span className="text-xs">✓</span>}
+                </div>
+                <div>
+                  <div className={cls("font-medium", t.done && "text-ink-400 line-through")}>{t.title}</div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 mt-1 leading-relaxed">{t.description}</div>
+                </div>
+              </div>
+            </Card>
+          </button>
+        ))}
+      </section>
+
+      <Card>
+        <div className="text-sm font-medium mb-3">21 天概览</div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {Array.from({length:21}, (_,i)=>i+1).map(d => {
+            const dt = tasksByDay.get(d) || [];
+            const done = dt.length>0 && dt.every(t=>t.done);
+            const isToday = d===dayIndex;
+            return (
+              <div key={d} className={cls("aspect-square rounded-md flex items-center justify-center text-xs",
+                isToday && "ring-2 ring-moon-400",
+                done ? "bg-score-high text-white"
+                     : d<=dayIndex ? "bg-moon-50 text-moon-700 dark:bg-moon-700/30 dark:text-moon-100"
+                                   : "bg-ink-100 text-ink-400 dark:bg-ink-700 dark:text-ink-300")}>
+                {d}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   认知重构模板（CBT-I）
+============================================================ */
+const REFRAME_TEMPLATES = [
+  { id:"catastrophe_tomorrow", original:"今晚再睡不着，明天就完蛋了。",
+    prompts:["过去你也有过没睡好的日子，结果真的「完蛋」了吗？", "明天如果状态一般，有没有可以减轻负担的方式？"],
+    suggested:"就算睡得不理想，明天我也能想办法过得去。过去很多次没睡好，我也都撑过了。" },
+  { id:"rigidity_8hours", original:"我必须睡满 8 小时，不然身体会垮。",
+    prompts:["你的身体每天真的需要完全相同的时长吗？", "有没有过睡得少但精神还可以的经历？"],
+    suggested:"睡眠时长是个范围。今晚睡 6 小时也并不意味着身体会垮，恢复感更重要。" },
+  { id:"fortune_immediate", original:"我必须立刻睡着，不然又是一夜白搭。",
+    prompts:["「必须立刻睡着」这件事，越急是不是越睡不着？", "如果允许自己慢慢来，会发生什么？"],
+    suggested:"允许自己慢一点。即使现在没睡着，安静地躺着也是在休息。" },
+  { id:"all_or_nothing_never", original:"我从来没睡过一个好觉。",
+    prompts:["过去 30 天里，有没有哪怕一晚醒来感觉还不错？", "「从来没有」是不是一个绝对化的说法？"],
+    suggested:"确实有不少难熬的夜晚，但偶尔也有睡得相对好的时候。今晚我可以期待一个还可以的夜晚。" },
+  { id:"self_blame_tired", original:"今天累成这样，都是因为我没睡好。",
+    prompts:["今天的疲劳真的只来自睡眠吗？", "压力、咖啡因、运动、情绪有没有也在影响？"],
+    suggested:"疲劳的原因是多方面的，睡眠只是其中之一。我不需要因此再责备自己一次。" },
+  { id:"catastrophe_health", original:"长期睡不好我一定会得大病。",
+    prompts:["你已经做了哪些事在尝试改善？", "比起「一定会」，「可能会，所以我正在调整」是不是更接近事实？"],
+    suggested:"长期睡眠问题确实需要重视，所以我正在记录、调整、必要时寻求帮助。这本身就是在保护身体。" },
+  { id:"fortune_meeting", original:"我没睡好，明天的会议肯定搞砸。",
+    prompts:["过去状态一般的日子里，你的表现真的差到那种程度吗？", "有没有可以提前准备、减轻紧张的事？"],
+    suggested:"我可能不会处于最好的状态，但准备已经做了，关键内容我能讲清楚。" },
+  { id:"rigidity_lie_in_bed", original:"我必须躺着，就算睡不着也得在床上。",
+    prompts:["床和睡眠的联系，会不会因此被「躺很久」削弱？", "起身做点无聊的事，等困了再回来，是不是反而更快入睡？"],
+    suggested:"如果躺 20 分钟还没睡着，可以起身去客厅做点无聊的事。这样反而能保护「床=睡眠」的条件反射。" }
+];
+
+/* ============================================================
+   Pages: Practice + Breathing
+============================================================ */
+const CBT_PRACTICES = [
+  { id:"worry", title:"担忧时间", duration:"10–15 分钟", icon:"✎",
+    desc:"把烦心事写下来归档：「这件事已经处理过了，明天再想」。" },
+  { id:"reframe", title:"认知重构", duration:"5 分钟", icon:"🪞",
+    desc:"识别一个睡眠相关的负面想法，换一个更平衡的说法。" }
+];
+const MEDITATIONS = [
+  { id:"pmr", title:"渐进式肌肉放松", duration:"12 分钟", desc:"逐组放松身体肌群，缓解白天积累的紧绷感。", icon:"🌿", locked:true },
+  { id:"scan", title:"身体扫描冥想", duration:"10 分钟", desc:"把注意力从头顶慢慢扫到脚底。", icon:"🌙", locked:true }
+];
+
+function PracticePage({ onNav, onChooseBreath }){
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-6">
+      <header>
+        <h1 className="text-2xl font-medium">放松训练</h1>
+        <p className="text-sm text-ink-500 dark:text-ink-300 mt-1">找一个舒服的姿势，从一次呼吸开始。</p>
+      </header>
+
+      <section className="space-y-3">
+        <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">呼吸训练</div>
+        {BREATH_METHODS.map(m => (
+          <button key={m.id} onClick={()=>onChooseBreath(m.id)} className="w-full text-left">
+            <Card>
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">{m.icon}</div>
+                <div className="flex-1">
+                  <div className="font-medium">{m.title}</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-300 mt-0.5">{m.subtitle} · {m.defaultMin} 分钟</div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 mt-1.5 leading-relaxed">{m.desc}</div>
+                </div>
+              </div>
+            </Card>
+          </button>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">CBT-I 工具</div>
+        {CBT_PRACTICES.map(p => (
+          <button key={p.id} onClick={()=>onNav(p.id)} className="w-full text-left">
+            <Card>
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">{p.icon}</div>
+                <div className="flex-1">
+                  <div className="font-medium">{p.title}</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-300 mt-0.5">{p.duration}</div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 mt-1.5 leading-relaxed">{p.desc}</div>
+                </div>
+              </div>
+            </Card>
+          </button>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">冥想 · 放松</div>
+        {MEDITATIONS.map(p => (
+          <Card key={p.id} className={p.locked?"opacity-50":""}>
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">{p.icon}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{p.title}</span>
+                  {p.locked && <span className="text-xs text-ink-400">即将上线</span>}
+                </div>
+                <div className="text-xs text-ink-400 dark:text-ink-300 mt-0.5">{p.duration}</div>
+                <div className="text-sm text-ink-500 dark:text-ink-300 mt-1.5 leading-relaxed">{p.desc}</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Worry Dump / Reframe
+============================================================ */
+const WORRY_PROMPTS = [
+  "工作上还没解决的事？",
+  "明天 / 这周让你紧张的安排？",
+  "今天和谁的对话让你不舒服？",
+  "身体上让你担心的感觉？",
+  "钱、关系、未来 — 任何在脑子里转的话题。"
+];
+
+function WorryPage({ onBack }){
+  const { state, addWorry, archiveWorry, deleteWorry } = useStore();
+  const profile = state.profile;
+  const [draft, setDraft] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const today = todayStr();
+  const placeholder = useMemo(() => WORRY_PROMPTS[Math.floor(Math.random()*WORRY_PROMPTS.length)], []);
+  const todayActive = state.worries.filter(w => w.date===today && !w.archived).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const archived = state.worries.filter(w => w.archived).sort((a,b)=>(b.archivedAt||b.createdAt).localeCompare(a.archivedAt||a.createdAt)).slice(0,20);
+
+  const add = () => {
+    const content = draft.trim(); if (!content) return;
+    addWorry({ worryId: uid(), userId: profile.userId, date: today, content, archived:false, createdAt:new Date().toISOString() });
+    setDraft("");
+  };
+  const archiveAll = () => todayActive.forEach(w => archiveWorry(w.worryId));
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header>
+        <div className="text-sm text-ink-400 dark:text-ink-300">CBT-I · 担忧时间</div>
+        <h1 className="text-2xl font-medium mt-1">把烦心事先放在这里</h1>
+        <p className="text-sm text-ink-500 dark:text-ink-300 mt-2 leading-relaxed">
+          每天给自己 10–15 分钟，把脑子里转的事一条一条写下来。
+          写完归档，告诉自己「这件事已经处理过了，今晚不用再想」。
+        </p>
+      </header>
+
+      <Card>
+        <div className="text-sm text-ink-500 dark:text-ink-300 mb-2">现在让你担心的是什么？</div>
+        <textarea value={draft} onChange={(e)=>setDraft(e.target.value)} rows={4} maxLength={500} placeholder={placeholder}
+          className="w-full px-4 py-3 rounded-soft bg-ink-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700 text-base resize-none focus:outline-none focus:border-moon-300"/>
+        <div className="flex justify-end mt-3">
+          <Button disabled={!draft.trim()} onClick={add}>写下来</Button>
+        </div>
+      </Card>
+
+      {todayActive.length>0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="text-sm font-medium text-ink-500 dark:text-ink-300">今天的清单（{todayActive.length}）</div>
+            <button onClick={archiveAll} className="text-xs text-moon-600 dark:text-moon-200">全部归档 →</button>
+          </div>
+          {todayActive.map(w => (
+            <Card key={w.worryId} className="space-y-3">
+              <div className="text-base leading-relaxed text-ink-700 dark:text-ink-100 whitespace-pre-wrap">{w.content}</div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={()=>deleteWorry(w.worryId)} className="text-xs text-ink-400 dark:text-ink-300 px-3 py-1.5">删除</button>
+                <button onClick={()=>archiveWorry(w.worryId)} className="text-xs text-moon-600 dark:text-moon-200 bg-moon-50 dark:bg-moon-700/40 px-3 py-1.5 rounded-pill">归档（明天再想）</button>
+              </div>
+            </Card>
+          ))}
+          <Card className="bg-moon-50 dark:bg-moon-700/30 border-moon-200 dark:border-moon-700">
+            <div className="text-sm leading-relaxed text-ink-700 dark:text-ink-100">
+              💡 写完之后：如果今晚再想到这些事，可以告诉自己<strong>「这件事已经在担忧时间处理过了，明天再想」</strong>。
+            </div>
+          </Card>
+        </section>
+      )}
+
+      <button onClick={()=>setShowHistory(v=>!v)} className="w-full text-sm text-ink-400 dark:text-ink-300 py-2">
+        {showHistory?"收起":"查看"}历史归档（{archived.length}）
+      </button>
+      {showHistory && archived.length>0 && (
+        <section className="space-y-2">
+          {archived.map(w => (
+            <Card key={w.worryId} className="opacity-70">
+              <div className="text-xs text-ink-400 dark:text-ink-300 mb-1">{fmtMD(w.archivedAt||w.date)}</div>
+              <div className="text-sm text-ink-600 dark:text-ink-200 whitespace-pre-wrap line-clamp-3">{w.content}</div>
+            </Card>
+          ))}
+        </section>
+      )}
+
+      <div className="pt-4"><Button block variant="ghost" onClick={onBack}>返回</Button></div>
+    </div>
+  );
+}
+
+function ReframePage({ onBack }){
+  const { state, addReframe, deleteReframe } = useStore();
+  const profile = state.profile;
+  const [mode, setMode] = useState("pick");
+  const [template, setTemplate] = useState(null);
+  const [original, setOriginal] = useState("");
+  const [balanced, setBalanced] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const history = [...state.reframes].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+
+  const pickT = (t) => { setTemplate(t); setOriginal(t.original); setBalanced(""); setMode("compose"); };
+  const pickCustom = () => { setTemplate(null); setOriginal(""); setBalanced(""); setMode("compose"); };
+  const useSuggested = () => template && setBalanced(template.suggested);
+  const save = () => {
+    if (!original.trim() || !balanced.trim()) return;
+    addReframe({
+      reframeId: uid(), userId: profile.userId, date: todayStr(),
+      originalThought: original.trim(), templateId: template?.id,
+      balancedThought: balanced.trim(), createdAt: new Date().toISOString()
+    });
+    setMode("done");
+  };
+  const reset = () => { setMode("pick"); setTemplate(null); setOriginal(""); setBalanced(""); };
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header>
+        <div className="text-sm text-ink-400 dark:text-ink-300">CBT-I · 认知重构</div>
+        <h1 className="text-2xl font-medium mt-1">
+          {mode==="compose" ? "试着换一个说法" : mode==="done" ? "做得很好" : "你脑子里有这样的声音吗？"}
+        </h1>
+        {mode==="pick" && (
+          <p className="text-sm text-ink-500 dark:text-ink-300 mt-2 leading-relaxed">
+            选一句最像你的想法。我们不会否定它，而是一起看看是否还有别的角度。
+          </p>
+        )}
+      </header>
+
+      {mode==="pick" && (
+        <>
+          <div className="space-y-3">
+            {REFRAME_TEMPLATES.map(t => (
+              <button key={t.id} onClick={()=>pickT(t)} className="w-full text-left">
+                <Card>
+                  <div className="text-base text-ink-700 dark:text-ink-100 leading-relaxed">“{t.original}”</div>
+                </Card>
+              </button>
+            ))}
+            <Card>
+              <div className="text-sm text-ink-500 dark:text-ink-300 mb-3">都不太像？写下你自己的想法。</div>
+              <Button block variant="outline" onClick={pickCustom}>自己写一个</Button>
+            </Card>
+          </div>
+
+          <button onClick={()=>setShowHistory(v=>!v)} className="w-full text-sm text-ink-400 dark:text-ink-300 py-2">
+            {showHistory?"收起":"查看"}历史练习（{history.length}）
+          </button>
+          {showHistory && history.length>0 && (
+            <section className="space-y-2">
+              {history.slice(0,20).map(r => (
+                <Card key={r.reframeId} className="space-y-2">
+                  <div className="text-xs text-ink-400 dark:text-ink-300">{fmtMD(r.createdAt)}</div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 italic">“{r.originalThought}”</div>
+                  <div className="text-sm text-ink-700 dark:text-ink-100 leading-relaxed">→ {r.balancedThought}</div>
+                  <div className="flex justify-end">
+                    <button onClick={()=>deleteReframe(r.reframeId)} className="text-xs text-ink-400 dark:text-ink-300">删除</button>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          )}
+
+          <div className="pt-2"><Button block variant="ghost" onClick={onBack}>返回</Button></div>
+        </>
+      )}
+
+      {mode==="compose" && (
+        <>
+          <Card>
+            <div className="text-xs text-ink-400 dark:text-ink-300 mb-2">原始想法</div>
+            <textarea value={original} onChange={(e)=>setOriginal(e.target.value)} rows={2} maxLength={200}
+              className="w-full px-3 py-2 rounded-soft bg-ink-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700 text-sm italic resize-none"/>
+          </Card>
+
+          {template && (
+            <Card className="bg-moon-50 dark:bg-moon-700/30 border-moon-200 dark:border-moon-700 space-y-3">
+              <div className="text-sm font-medium text-ink-700 dark:text-ink-100">温和地问问自己</div>
+              <ul className="space-y-2 text-sm leading-relaxed text-ink-600 dark:text-ink-200">
+                {template.prompts.map((p,i) => <li key={i}>· {p}</li>)}
+              </ul>
+            </Card>
+          )}
+
+          <Card>
+            <div className="text-sm text-ink-500 dark:text-ink-300 mb-2">换一个说法</div>
+            <textarea value={balanced} onChange={(e)=>setBalanced(e.target.value)} rows={5} maxLength={500}
+              placeholder="用你自己的话写一句更平衡的想法……"
+              className="w-full px-4 py-3 rounded-soft bg-ink-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700 text-base resize-none focus:outline-none focus:border-moon-300"/>
+            {template && (
+              <button onClick={useSuggested} className="mt-2 text-xs text-moon-600 dark:text-moon-200">
+                ✎ 用建议的写法填入（可再修改）
+              </button>
+            )}
+          </Card>
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="ghost" onClick={reset}>重新选</Button>
+            <Button block disabled={!original.trim()||!balanced.trim()} onClick={save}>保存这次练习</Button>
+          </div>
+        </>
+      )}
+
+      {mode==="done" && (
+        <>
+          <Card className="text-center py-10 space-y-3">
+            <div className="text-5xl">🌿</div>
+            <div className="text-base">这一次的转换已经存下来了。</div>
+            <div className="text-sm text-ink-500 dark:text-ink-300 leading-relaxed">
+              下次同样的想法跳出来时，你可以回到这里看一眼自己写过的话。
+              想法不会马上消失，但慢慢地，新的声音会变大。
+            </div>
+          </Card>
+          <div className="space-y-2">
+            <Button block onClick={reset}>再练习一次</Button>
+            <Button block variant="ghost" onClick={onBack}>返回</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Plan Recommendation (Onboarding)
+============================================================ */
+const PLAN_REC_WEEKS = [
+  { label:"第 1 周", title:"固定起床时间", desc:"包括周末。建立节律最稳的第一块基石。" },
+  { label:"第 2 周", title:"刺激控制：床 = 只睡觉", desc:"让大脑重新把床和睡眠联系起来。" },
+  { label:"第 3 周", title:"睡眠卫生 + 睡前放松", desc:"调整咖啡因、屏幕、卧室环境，加上放松练习。" }
+];
+
+function PlanRecPage({ onDone }){
+  const { state, setPlan } = useStore();
+  const profile = state.profile;
+  const join = () => {
+    if (!state.plan || state.plan.status!=="active"){
+      const { plan, tasks } = createPlan(profile.userId);
+      setPlan(plan, tasks);
+    }
+    onDone();
+  };
+  return (
+    <div className="min-h-dvh px-6 pt-12 pb-10 flex flex-col">
+      <header className="space-y-2">
+        <div className="text-sm text-ink-400 dark:text-ink-300">为你准备好了一份</div>
+        <h1 className="text-3xl font-medium leading-snug">21 天睡眠改善计划</h1>
+        <p className="text-base text-ink-500 dark:text-ink-200 leading-relaxed mt-4">
+          每天 1–3 个微任务，每个都能在 2 分钟内完成。一次只调整一件事，循序渐进。
+        </p>
+      </header>
+
+      <div className="space-y-3 mt-8 flex-1">
+        {PLAN_REC_WEEKS.map((w, i) => (
+          <Card key={w.label}>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-moon-100 dark:bg-moon-700/40 text-moon-700 dark:text-moon-100 flex items-center justify-center text-sm font-medium flex-shrink-0">{i+1}</div>
+              <div className="flex-1">
+                <div className="text-xs text-ink-400 dark:text-ink-300">{w.label}</div>
+                <div className="text-base font-medium mt-0.5">{w.title}</div>
+                <div className="text-sm text-ink-500 dark:text-ink-300 mt-1 leading-relaxed">{w.desc}</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+        <Card className="bg-moon-50 dark:bg-moon-700/30 border-moon-200 dark:border-moon-700">
+          <div className="text-sm leading-relaxed text-ink-700 dark:text-ink-100">
+            没有连击、没有惩罚。<strong>漏掉一两天完全没关系</strong>，捡起来继续就好。
+          </div>
+        </Card>
+      </div>
+
+      <div className="space-y-2 mt-6">
+        <Button block size="lg" onClick={join}>加入这个计划</Button>
+        <Button block variant="ghost" onClick={onDone}>先看看，稍后再加入</Button>
+      </div>
+    </div>
+  );
+}
+
+function BreathingPage({ methodId, onBack }){
+  const { state, addPractice } = useStore();
+  const method = useMemo(()=>findMethod(methodId), [methodId]);
+  const targetSec = method.defaultMin * 60;
+  const [running, setRunning] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const startedAtRef = useRef(null);
+
+  useEffect(() => {
+    if (!running) return;
+    const i = setInterval(()=>setElapsed(s=>s+1), 1000);
+    return ()=>clearInterval(i);
+  }, [running]);
+
+  useEffect(() => {
+    if (running && elapsed >= targetSec && !completed){
+      setCompleted(true); setRunning(false);
+      if (startedAtRef.current){
+        addPractice({
+          sessionId: uid(), userId: state.profile.userId, type:"breathing", contentId:method.id,
+          startedAt: new Date(startedAtRef.current).toISOString(),
+          durationSec: elapsed, completed:true
+        });
+      }
+    }
+  }, [running, elapsed, completed, method, targetSec]);
+
+  useEffect(() => { setRunning(false); setCompleted(false); setElapsed(0); startedAtRef.current = null; }, [method.id]);
+
+  const start = () => { setRunning(true); setCompleted(false); setElapsed(0); startedAtRef.current = Date.now(); };
+  const stop = () => {
+    setRunning(false);
+    if (startedAtRef.current && elapsed>30){
+      addPractice({
+        sessionId: uid(), userId: state.profile.userId, type:"breathing", contentId:method.id,
+        startedAt: new Date(startedAtRef.current).toISOString(),
+        durationSec: elapsed, completed:false
+      });
+    }
+    onBack();
+  };
+
+  if (completed){
+    return (
+      <div className="min-h-dvh px-6 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="text-5xl">🌙</div>
+        <h1 className="text-2xl font-medium">今晚也辛苦了</h1>
+        <p className="text-base text-ink-500 dark:text-ink-200 leading-relaxed max-w-xs">
+          身体已经慢下来了。如果还有点清醒，可以再做几轮，或者直接闭上眼睛。
+        </p>
+        <div className="space-y-2 w-full max-w-xs">
+          <Button block onClick={start}>再做 {method.defaultMin} 分钟</Button>
+          <Button block variant="ghost" onClick={onBack}>回首页</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!running){
+    return (
+      <div className="min-h-dvh px-6 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="text-sm text-ink-400">{method.title}</div>
+        <h1 className="text-2xl font-medium">找一个舒服的姿势</h1>
+        <p className="text-base text-ink-500 dark:text-ink-200 leading-relaxed max-w-xs">
+          {method.desc}
+        </p>
+        <div className="space-y-2 w-full max-w-xs">
+          <Button block size="lg" onClick={start}>开始 {method.defaultMin} 分钟</Button>
+          <Button block variant="ghost" onClick={onBack}>返回</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const remaining = Math.max(0, targetSec - elapsed);
+  const mm = pad(Math.floor(remaining/60));
+  const ss = pad(remaining%60);
+
+  return (
+    <div className="min-h-dvh px-6 flex flex-col items-center justify-between py-12">
+      <div className="text-sm text-ink-400 dark:text-ink-300">{method.title} · 剩余 {mm}:{ss}</div>
+      <BreathingOrb method={method} running={running}/>
+      <Button variant="ghost" onClick={stop}>结束</Button>
+    </div>
+  );
+}
+
+/* ============================================================
+   原创睡前故事 + TTS 引擎
+============================================================ */
+const splitParas = (t) => t.trim().split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+
+const STORIES = [
+  { id:"lake-lamp", title:"湖边的灯", subtitle:"深秋傍晚 · 一盏小小的灯", icon:"🏮", estMinutes:5,
+    paragraphs: splitParas(`
+深秋了。傍晚有点凉。
+
+湖边有一间小木屋。屋顶是红色的，旧旧的。窗户里透出来一团黄黄的光。
+
+屋里点着一盏灯。灯不大，就那么放在桌上。光从木格窗里漏出来。远远看过去，像一颗温柔的小星星，落在了湖边。
+
+窗外有一片湖。风吹过来的时候，湖面皱了一下。风吹过去，湖面又平了。
+
+水边有芦苇，高高的，低着头。风一吹，沙沙地响。好像在跟风说着什么。
+
+湖上浮着一只小船。船上没有人，缆绳也没有拴。它就这样飘着。偶尔有几条鱼游过来。咕嘟一声，又潜下去了。
+
+屋里的人正在烧水。壶在炉子上咕噜咕噜地响。火光把墙映得一晃一晃的。茶香一点一点飘出来。混进秋天的凉气里，很暖。
+
+天更暗了。窗外的星星，一颗一颗亮起来。好像在和那盏灯，互相照应着。
+
+今晚不用着急。时间还早得很。我们就这样坐着。跟湖一起，慢慢安静下来。
+    `) },
+  { id:"slow-turtle", title:"一只不再赛跑的乌龟", subtitle:"改写自一个你听过的故事", icon:"🐢", estMinutes:6,
+    paragraphs: splitParas(`
+从前有只乌龟。它和兔子比过一次赛跑。
+
+很多人都知道这个故事。乌龟赢了。兔子在路边睡着了。
+
+可是赢的那天之后，乌龟就有点烦了。
+
+每次它出门，小松鼠会跑过来问它。小花猫也会凑过来问它。它们都问同一句话。今天又要跟谁比赛呀。
+
+乌龟低下头，想了一会儿。然后它说。我不想比了。
+
+那天它没有去赛道。它选了一条小路。
+
+路边有蘑菇，胖胖的，顶着露珠。路边有一条小溪，叮叮咚咚在唱歌。路边还有蓝色的花，小小的，不知道叫什么名字。
+
+乌龟走得很慢。它停下来，闻了闻一朵花。又停下来，看一只蚂蚁搬家，看了好久。还坐在溪边，听了一会儿水的声音。水的声音真好听，一直不停，又什么都不一样。
+
+走到山脚下的时候，太阳已经快下山了。
+
+乌龟抬头看了看山顶。它没有掉头回家。它开始往上爬。一步。再一步。很慢很慢地往上爬。
+
+它爬到山顶的时候，月亮刚好升起来。圆圆的，亮亮的。就在它眼前，好像伸手就能够到。
+
+山顶好安静。乌龟坐下来。它什么也没想，就这么看着月亮。
+
+它忽然发现一件事。原来跑得快，还是跑得慢。和看见什么东西。好像并没有什么关系。
+
+重要的是什么呢。重要的是今天它看见了月亮。圆圆的，亮亮的月亮。
+
+那天晚上村子里其他的动物，都没有看见。因为它们都在赛道上。
+    `) },
+  { id:"wind-night", title:"风的一晚", subtitle:"一阵风的夜班", icon:"🍃", estMinutes:5,
+    paragraphs: splitParas(`
+今晚是风的夜班。天刚黑下来，它就出门了。
+
+第一站是森林。
+
+白天的太阳把树叶晒得有点干。风一片一片叶子地摇过去。每一片都摇一下。叶子们哗哗地响起来。好像在说谢谢你呀。
+
+风很高兴。继续往前走。
+
+下一站是湖边。它从这里过的时候，把湖面吹皱了。看了一会儿。又轻轻把湖面抚平。月亮倒在水里。被风追着跑过来跑过去。风觉得月亮在笑。
+
+接着风路过了一栋小房子。它没有直接过去。它停在窗台上，往里看了看。
+
+窗户边有一个人。躺在床上。嘴巴在动，一下一下的。风仔细听了听。哦，他在数羊。已经数到第八十九只了。眉头还是皱着的。
+
+风想了想。它悄悄从窗缝钻进去。对准那个人，轻轻吹了一下。
+
+凉凉的，刚好碰到他的发梢。
+
+那个人愣了一下。然后长长地叹了一口气。眉头慢慢松开了。
+
+风没有多留。它还有好多地方要去呢。
+
+它路过一片菜地，白菜们排得整整齐齐。它路过一座桥，桥底下有鱼在睡觉。它路过一条空空的街，路灯打着瞌睡。
+
+所有该睡着的，都慢慢睡着了。
+
+天快亮的时候，风也累了。它飞到山的另一边。在草地上盘成一团。
+
+风自己也睡着了。轻轻的，软软的。好像它也是今晚被哄睡的一个。
+    `) }
+];
+const findStory = (id) => STORIES.find(s => s.id === id);
+
+const ttsEngine = (() => {
+  let currentStoryId = null, paragraphIdx = 0, paused = false;
+  let gapTimer = null, voice = null, voicesReady = false, volume = 1.0;
+  let currentOpts = {}, currentEngine = null, currentAudio = null, currentAudioRevoke = null;
+  let loading = false, error = undefined;
+  const listeners = new Set();
+
+  const isSupported = () => typeof window !== "undefined" && "speechSynthesis" in window;
+
+  const waitForVoices = () => new Promise(resolve => {
+    if (!isSupported()) return resolve([]);
+    if (voicesReady) return resolve(speechSynthesis.getVoices());
+    const tryGet = () => { const v = speechSynthesis.getVoices(); if (v.length>0){voicesReady=true;resolve(v);} };
+    tryGet();
+    if (!voicesReady) {
+      const h = () => { tryGet(); if (voicesReady) speechSynthesis.removeEventListener("voiceschanged", h); };
+      speechSynthesis.addEventListener("voiceschanged", h);
+      setTimeout(() => { voicesReady=true; resolve(speechSynthesis.getVoices()); }, 1500);
+    }
+  });
+
+  const hasChineseVoice = async () => { const vs = await waitForVoices(); return vs.some(v=>/zh|cmn/i.test(v.lang)); };
+
+  const pickVoice = async () => {
+    if (voice) return voice;
+    const vs = await waitForVoices();
+    const scored = vs.filter(v=>/zh|cmn/i.test(v.lang)).map(v=>{
+      let s=0;
+      if (v.lang==="zh-CN") s+=100; else if (v.lang.startsWith("zh")) s+=50; else s+=10;
+      if (/female|girl|woman/i.test(v.name)) s+=20;
+      if (/tingting|mei-jia|sin-ji|yuna/i.test(v.name)) s+=30;
+      s+=Math.min(v.name.length,15);
+      return {voice:v,score:s};
+    }).sort((a,b)=>b.score-a.score);
+    voice = scored[0]?.voice||null;
+    return voice;
+  };
+
+  const emit = () => listeners.forEach(fn=>fn({
+    storyId: currentStoryId, paragraphIdx, paused,
+    totalParagraphs: currentStoryId?(findStory(currentStoryId)?.paragraphs.length??0):0,
+    engine: currentEngine, loading, error
+  }));
+
+  const synthesizeParagraph = async (proxyUrl, text, voiceName) => {
+    const res = await fetch(proxyUrl, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ text, voice: voiceName, speed: 0.95 })
+    });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { const j = await res.json(); if (j.message) msg = j.message; } catch {}
+      const e = new Error(msg); e.status = res.status; throw e;
+    }
+    return res.arrayBuffer();
+  };
+
+  const speakCloud = async (text, totalParas) => {
+    loading = true; error = undefined; emit();
+    let buf;
+    try {
+      buf = await synthesizeParagraph(currentOpts.proxyUrl, text, currentOpts.voice);
+    } catch (e) {
+      loading = false;
+      error = e.status===503 ? "服务端未配置豆包凭证" : e.message;
+      emit();
+      currentEngine = "browser"; await pickVoice(); speakBrowser(text, totalParas);
+      return;
+    }
+    if (paused||!currentStoryId){ loading=false; emit(); return; }
+    loading = false; emit();
+    const blob = new Blob([buf], { type:"audio/mpeg" });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.volume = volume;
+    currentAudio = audio;
+    currentAudioRevoke = () => URL.revokeObjectURL(url);
+    audio.onended = () => {
+      currentAudioRevoke?.(); currentAudioRevoke = null;
+      if (paused||!currentStoryId) return;
+      paragraphIdx+=1; emit();
+      if (paragraphIdx>=totalParas){ stop(); return; }
+      gapTimer = setTimeout(()=>{ if(!paused) speakParagraph(); }, 1400);
+    };
+    audio.onerror = () => stop();
+    try { await audio.play(); } catch { stop(); }
+  };
+
+  const speakBrowser = (text, totalParas) => {
+    if(!isSupported()){stop();return;}
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang="zh-CN"; if(voice)u.voice=voice; u.rate=1.0; u.pitch=1.0; u.volume=volume;
+    u.onend = () => {
+      if (paused||!currentStoryId) return;
+      paragraphIdx+=1; emit();
+      if (paragraphIdx>=totalParas){stop();return;}
+      gapTimer = setTimeout(()=>{if(!paused)speakParagraph();}, 1400);
+    };
+    u.onerror = () => stop();
+    try{speechSynthesis.speak(u);}catch{stop();}
+  };
+
+  const speakParagraph = async () => {
+    if (paused||!currentStoryId) return;
+    const story = findStory(currentStoryId); if (!story){stop();return;}
+    const text = story.paragraphs[paragraphIdx]; if (text==null){stop();return;}
+    if (currentEngine === "cloud" && currentOpts.proxyUrl) await speakCloud(text, story.paragraphs.length);
+    else speakBrowser(text, story.paragraphs.length);
+  };
+
+  const start = async (id, opts={}) => {
+    if(!isSupported() && !opts.proxyUrl) return;
+    stop(); if(!findStory(id))return;
+    currentStoryId=id; paragraphIdx=0; paused=false;
+    currentOpts = opts;
+    currentEngine = opts.proxyUrl ? "cloud" : "browser";
+    error = undefined; emit();
+    if (currentEngine === "browser") await pickVoice();
+    await speakParagraph();
+  };
+  const pause = () => {
+    if(!currentStoryId)return; paused=true;
+    if (currentEngine === "cloud") { try{currentAudio?.pause();}catch{} }
+    else { try{speechSynthesis.pause();}catch{} }
+    if(gapTimer){clearTimeout(gapTimer);gapTimer=null;} emit();
+  };
+  const resume = () => {
+    if(!currentStoryId)return; paused=false;
+    if (currentEngine === "cloud" && currentAudio) { currentAudio.play().catch(()=>{}); }
+    else if (isSupported() && speechSynthesis.paused) { try{speechSynthesis.resume();}catch{} }
+    else speakParagraph();
+    emit();
+  };
+  const stop = () => {
+    if(gapTimer){clearTimeout(gapTimer);gapTimer=null;}
+    if (isSupported()) { try{speechSynthesis.cancel();}catch{} }
+    if (currentAudio) { try{currentAudio.pause();}catch{} currentAudio = null; }
+    if (currentAudioRevoke) { currentAudioRevoke(); currentAudioRevoke = null; }
+    currentStoryId=null; paragraphIdx=0; paused=false; currentEngine=null; loading=false; error=undefined; emit();
+  };
+
+  return {
+    isSupported, hasChineseVoice,
+    subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
+    getStatus: () => ({ storyId: currentStoryId, paragraphIdx, paused,
+      totalParagraphs: currentStoryId?(findStory(currentStoryId)?.paragraphs.length??0):0,
+      engine: currentEngine, loading, error }),
+    start, pause, resume, stop,
+    setVolume: (v) => { volume = Math.max(0,Math.min(1,v)); }
+  };
+})();
+
+/* ============================================================
+   音频引擎（端侧合成）
+============================================================ */
+const MAX_VOICES = 3;
+const NOISE_DURATION_SEC = 10;
+const FADE_MS = 800;
+const TIMER_FADE_MS = 5000;
+
+const SOUNDS_CATALOG = [
+  { id:"rain", title:"夜雨", icon:"🌧️", category:"nature",
+    desc:"细密均匀的雨声，最普适的入睡背景。" },
+  { id:"ocean", title:"海浪", icon:"🌊", category:"nature",
+    desc:"慢节奏的浪起浪落，跟着呼吸一起松下来。" },
+  { id:"forest", title:"森林夜虫", icon:"🌲", category:"nature",
+    desc:"高频空气感 + 偶尔虫鸣，像在野外帐篷里。" },
+  { id:"fire", title:"篝火", icon:"🔥", category:"nature",
+    desc:"低频燃烧声 + 偶尔噼啪爆破，温暖陪伴。" },
+  { id:"fan", title:"风扇低鸣", icon:"💨", category:"white-noise",
+    desc:"中频带通噪音，掩盖环境噪声的经典选择。" },
+  { id:"white", title:"白噪音", icon:"▩", category:"white-noise",
+    desc:"全频段平均能量，强遮蔽，适合嘈杂环境。" },
+  { id:"pink", title:"粉噪音", icon:"◌", category:"white-noise",
+    desc:"比白噪音更柔和，被研究认为对深睡眠更友好。" },
+  { id:"brown", title:"棕噪音", icon:"●", category:"white-noise",
+    desc:"低频为主，像远处的瀑布，最沉的一种。" }
+];
+const SOUND_CATEGORIES_LABEL = { "nature":"自然", "white-noise":"白噪音", "ambient":"环境" };
+const TIMER_OPTIONS = [15, 30, 45, 60, 90];
+const findSound = (id) => SOUNDS_CATALOG.find(s => s.id === id);
+
+const audioEngine = (() => {
+  let ctx = null, master = null;
+  const noiseBuffers = {};
+  const voices = new Map();
+
+  const getCtx = () => {
+    if (!ctx) { const Ctor = window.AudioContext||window.webkitAudioContext; if(!Ctor)return null; ctx=new Ctor(); }
+    if(ctx.state==="suspended")ctx.resume(); return ctx;
+  };
+  const getMaster = () => { const c=getCtx();if(!c)return null; if(!master){master=c.createGain();master.gain.value=0.75;master.connect(c.destination);} return master; };
+
+  const makeNoise = (type) => {
+    if(noiseBuffers[type])return noiseBuffers[type];
+    const c=getCtx();const sr=c.sampleRate;const buf=c.createBuffer(2,sr*NOISE_DURATION_SEC,sr);
+    for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);
+      if(type==="white"){for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+      else if(type==="pink"){let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.969*b2+w*0.153852;b3=0.8665*b3+w*0.3104856;b4=0.55*b4+w*0.5329522;b5=-0.7616*b5-w*0.016898;d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11;b6=w*0.115926;}}
+      else{let last=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;last=(last+0.02*w)/1.02;d[i]=last*3.5;}}
+    }
+    noiseBuffers[type]=buf; return buf;
+  };
+  const noiseSrc = (type) => { const c=getCtx();const s=c.createBufferSource();s.buffer=makeNoise(type);s.loop=true;s.start();return s; };
+
+  const fadeTo = (g,target,ms) => {
+    const c=getCtx();const t=c.currentTime;
+    g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);
+    g.gain.linearRampToValueAtTime(target,t+ms/1000);
+  };
+
+  // 柔化重写：所有声音末端 LP；不再用纯正弦；事件类柔化
+  const buildVoice = (id) => {
+    const c=getCtx();
+    const out=c.createGain();out.gain.value=0;
+    const inner=c.createGain();inner.gain.value=1;
+    let stopAll=()=>{};
+
+    if(id==="white"||id==="pink"||id==="brown"){
+      const s=noiseSrc(id);
+      const lp=c.createBiquadFilter();lp.type="lowpass";lp.Q.value=0.3;
+      lp.frequency.value=id==="white"?6000:id==="pink"?5000:2000;
+      const g=c.createGain();g.gain.value=id==="brown"?1.0:0.7;
+      s.connect(g).connect(lp).connect(out);
+      stopAll=()=>{try{s.stop();[g,lp].forEach(n=>n.disconnect());}catch{}};
+    }
+    else if(id==="rain"){
+      const s1=noiseSrc("pink");const lp1=c.createBiquadFilter();lp1.type="lowpass";lp1.frequency.value=1200;lp1.Q.value=0.5;
+      const g1=c.createGain();g1.gain.value=0.55;const pL=c.createStereoPanner();pL.pan.value=-0.15;
+      s1.connect(lp1).connect(g1).connect(pL).connect(inner);
+      const s2=noiseSrc("pink");const lp2=c.createBiquadFilter();lp2.type="lowpass";lp2.frequency.value=900;lp2.Q.value=0.4;
+      const g2=c.createGain();g2.gain.value=0.4;const pR=c.createStereoPanner();pR.pan.value=0.15;
+      s2.connect(lp2).connect(g2).connect(pR).connect(inner);
+      const lfo=c.createOscillator();lfo.frequency.value=0.05;const lfoG=c.createGain();lfoG.gain.value=0.08;
+      lfo.connect(lfoG).connect(g1.gain);lfo.start();
+      const softLP=c.createBiquadFilter();softLP.type="lowpass";softLP.frequency.value=2000;softLP.Q.value=0.3;
+      inner.connect(softLP).connect(out);
+      stopAll=()=>{try{lfo.stop();s1.stop();s2.stop();[g1,g2,pL,pR,lp1,lp2,lfoG,softLP,inner].forEach(n=>n.disconnect());}catch{}};
+    }
+    else if(id==="ocean"){
+      const s1=noiseSrc("brown");const lp1=c.createBiquadFilter();lp1.type="lowpass";lp1.frequency.value=500;lp1.Q.value=0.4;
+      const gMain=c.createGain();gMain.gain.value=0.6;const pL=c.createStereoPanner();pL.pan.value=-0.1;
+      s1.connect(lp1).connect(gMain).connect(pL).connect(inner);
+      const s2=noiseSrc("pink");const lp2=c.createBiquadFilter();lp2.type="lowpass";lp2.frequency.value=1200;lp2.Q.value=0.4;
+      const gFoam=c.createGain();gFoam.gain.value=0;const pR=c.createStereoPanner();pR.pan.value=0.1;
+      s2.connect(lp2).connect(gFoam).connect(pR).connect(inner);
+      const lfo=c.createOscillator();lfo.frequency.value=0.06;
+      const lfoG1=c.createGain();lfoG1.gain.value=0.25;lfo.connect(lfoG1).connect(gMain.gain);
+      const lfoG2=c.createGain();lfoG2.gain.value=0.18;lfo.connect(lfoG2).connect(gFoam.gain);
+      lfo.start();
+      const softLP=c.createBiquadFilter();softLP.type="lowpass";softLP.frequency.value=1800;softLP.Q.value=0.3;
+      inner.connect(softLP).connect(out);
+      stopAll=()=>{try{lfo.stop();s1.stop();s2.stop();[gMain,gFoam,pL,pR,lp1,lp2,lfoG1,lfoG2,softLP,inner].forEach(n=>n.disconnect());}catch{}};
+    }
+    else if(id==="fan"){
+      const s1=noiseSrc("brown");const lp1=c.createBiquadFilter();lp1.type="lowpass";lp1.frequency.value=90;lp1.Q.value=0.6;
+      const gSub=c.createGain();gSub.gain.value=0.7;s1.connect(lp1).connect(gSub).connect(inner);
+      const s2=noiseSrc("pink");const lp2=c.createBiquadFilter();lp2.type="lowpass";lp2.frequency.value=700;lp2.Q.value=0.5;
+      const gBody=c.createGain();gBody.gain.value=0.5;s2.connect(lp2).connect(gBody).connect(inner);
+      const lfo=c.createOscillator();lfo.frequency.value=3;const lfoG=c.createGain();lfoG.gain.value=0.025;
+      lfo.connect(lfoG).connect(gBody.gain);lfo.start();
+      const softLP=c.createBiquadFilter();softLP.type="lowpass";softLP.frequency.value=1500;softLP.Q.value=0.3;
+      inner.connect(softLP).connect(out);
+      stopAll=()=>{try{lfo.stop();s1.stop();s2.stop();[gSub,gBody,lp1,lp2,lfoG,softLP,inner].forEach(n=>n.disconnect());}catch{}};
+    }
+    else if(id==="forest"){
+      const s1=noiseSrc("pink");const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1500;bp.Q.value=0.5;
+      const gW=c.createGain();gW.gain.value=0.45;const pL=c.createStereoPanner();pL.pan.value=-0.2;
+      s1.connect(bp).connect(gW).connect(pL).connect(inner);
+      const s2=noiseSrc("pink");const bp2=c.createBiquadFilter();bp2.type="bandpass";bp2.frequency.value=1100;bp2.Q.value=0.5;
+      const gW2=c.createGain();gW2.gain.value=0.3;const pR=c.createStereoPanner();pR.pan.value=0.2;
+      s2.connect(bp2).connect(gW2).connect(pR).connect(inner);
+      const s3=noiseSrc("white");const bpC=c.createBiquadFilter();bpC.type="bandpass";bpC.frequency.value=2200;bpC.Q.value=18;
+      const gC=c.createGain();gC.gain.value=0.12;s3.connect(bpC).connect(gC).connect(inner);
+      const lfoC=c.createOscillator();lfoC.frequency.value=12;const lfoCG=c.createGain();lfoCG.gain.value=0.07;
+      lfoC.connect(lfoCG).connect(gC.gain);lfoC.start();
+      const softLP=c.createBiquadFilter();softLP.type="lowpass";softLP.frequency.value=2500;softLP.Q.value=0.3;
+      inner.connect(softLP).connect(out);
+      stopAll=()=>{try{lfoC.stop();s1.stop();s2.stop();s3.stop();[gW,gW2,gC,pL,pR,bp,bp2,bpC,lfoCG,softLP,inner].forEach(n=>n.disconnect());}catch{}};
+    }
+    else if(id==="fire"){
+      const s1=noiseSrc("brown");const lp1=c.createBiquadFilter();lp1.type="lowpass";lp1.frequency.value=250;lp1.Q.value=0.4;
+      const gLow=c.createGain();gLow.gain.value=0.7;s1.connect(lp1).connect(gLow).connect(inner);
+      const s2=noiseSrc("pink");const lp2=c.createBiquadFilter();lp2.type="lowpass";lp2.frequency.value=800;lp2.Q.value=0.4;
+      const gMid=c.createGain();gMid.gain.value=0.35;s2.connect(lp2).connect(gMid).connect(inner);
+      const lfo=c.createOscillator();lfo.frequency.value=0.4;const lfoG=c.createGain();lfoG.gain.value=0.12;
+      lfo.connect(lfoG).connect(gMid.gain);lfo.start();
+      const timers=[];
+      const crackle=()=>{const t=c.currentTime;const b=noiseSrc("white");const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=600+Math.random()*600;bp.Q.value=3;const bg=c.createGain();const vol=0.04+Math.random()*0.05;bg.gain.setValueAtTime(0,t);bg.gain.linearRampToValueAtTime(vol,t+0.04);bg.gain.exponentialRampToValueAtTime(0.0001,t+0.25);b.connect(bp).connect(bg).connect(inner);b.stop(t+0.3);timers.push(setTimeout(crackle,800+Math.random()*2500));};
+      crackle();
+      const softLP=c.createBiquadFilter();softLP.type="lowpass";softLP.frequency.value=1500;softLP.Q.value=0.3;
+      inner.connect(softLP).connect(out);
+      stopAll=()=>{timers.forEach(clearTimeout);try{lfo.stop();s1.stop();s2.stop();[gLow,gMid,lp1,lp2,lfoG,softLP,inner].forEach(n=>n.disconnect());}catch{}};
+    }
+
+    return {id,gain:out,stopAll};
+  };
+
+  const stopVoice = (v,fadeMs) => {
+    fadeTo(v.gain,0,fadeMs);
+    setTimeout(()=>{try{v.stopAll();v.gain.disconnect();}catch{}},fadeMs+50);
+  };
+
+  return {
+    isSupported:()=>!!(window.AudioContext||window.webkitAudioContext),
+    ensureStarted:async()=>{const c=getCtx();if(c?.state==="suspended")await c.resume();getMaster();},
+    play:(id,vol)=>{if(voices.has(id)){audioEngine.setVoiceVolume(id,vol);return;}const v=buildVoice(id);v.gain.connect(getMaster());fadeTo(v.gain,vol,FADE_MS);voices.set(id,v);},
+    stop:(id)=>{const v=voices.get(id);if(!v)return;voices.delete(id);stopVoice(v,FADE_MS);},
+    stopAll:(fadeMs)=>{const fm=fadeMs??TIMER_FADE_MS;Array.from(voices.keys()).forEach(id=>{const v=voices.get(id);voices.delete(id);stopVoice(v,fm);});},
+    setVoiceVolume:(id,v)=>{const x=voices.get(id);if(x)fadeTo(x.gain,v,200);},
+    setMasterVolume:(v)=>{const m=getMaster();if(m)fadeTo(m,v,200);},
+    isPlaying:(id)=>voices.has(id)
+  };
+})();
+
+/* 音频播放 React state */
+const AudioCtx = createContext(null);
+function AudioProvider({ children }){
+  const [active, setActive] = useState([]);
+  const [masterVolume, _setMaster] = useState(0.7);
+  const [timerEndsAt, setTimerEndsAt] = useState(null);
+  const [tts, setTts] = useState(ttsEngine.getStatus());
+  const [ttsVolume, _setTtsVolume] = useState(1.0);
+
+  useEffect(() => ttsEngine.subscribe(setTts), []);
+
+  useEffect(() => {
+    if (!timerEndsAt) return;
+    const i = setInterval(() => {
+      if (Date.now() >= timerEndsAt) {
+        audioEngine.stopAll();
+        ttsEngine.stop();
+        setActive([]);
+        setTimerEndsAt(null);
+      }
+    }, 1000);
+    return () => clearInterval(i);
+  }, [timerEndsAt]);
+
+  const api = useMemo(() => ({
+    active, masterVolume, timerEndsAt, tts, ttsVolume,
+    toggle: async (id) => {
+      await audioEngine.ensureStarted();
+      setActive(prev => {
+        const idx = prev.findIndex(v => v.id === id);
+        if (idx >= 0) {
+          audioEngine.stop(id);
+          const next = prev.filter(v => v.id !== id);
+          if (next.length === 0 && !ttsEngine.getStatus().storyId) setTimerEndsAt(null);
+          return next;
+        }
+        let next = prev;
+        if (next.length >= MAX_VOICES) {
+          audioEngine.stop(next[0].id);
+          next = next.slice(1);
+        }
+        audioEngine.play(id, 0.7);
+        return [...next, { id, volume: 0.7 }];
+      });
+    },
+    setVoiceVolume: (id, v) => {
+      audioEngine.setVoiceVolume(id, v);
+      setActive(prev => prev.map(a => a.id === id ? { ...a, volume: v } : a));
+    },
+    setMasterVolume: (v) => { audioEngine.setMasterVolume(v); _setMaster(v); },
+    stopAll: () => { audioEngine.stopAll(); ttsEngine.stop(); setActive([]); setTimerEndsAt(null); },
+    setTimer: (min) => setTimerEndsAt(min == null ? null : Date.now() + min*60*1000),
+    toggleStory: async (id, opts) => {
+      const cur = ttsEngine.getStatus();
+      if (cur.storyId === id) { ttsEngine.stop(); return; }
+      await ttsEngine.start(id, opts);
+    },
+    pauseStory: () => ttsEngine.pause(),
+    resumeStory: () => ttsEngine.resume(),
+    stopStory: () => ttsEngine.stop(),
+    setStoryVolume: (v) => { ttsEngine.setVolume(v); _setTtsVolume(v); }
+  }), [active, masterVolume, timerEndsAt, tts, ttsVolume]);
+
+  return <AudioCtx.Provider value={api}>{children}</AudioCtx.Provider>;
+}
+const useAudio = () => useContext(AudioCtx);
+
+const timerRemaining = (endsAt) => {
+  const s = Math.max(0, Math.round((endsAt - Date.now())/1000));
+  return `${pad(Math.floor(s/60))}:${pad(s%60)}`;
+};
+
+/* ============================================================
+   Mini Player
+============================================================ */
+function MiniPlayer({ hideOn }){
+  const a = useAudio();
+  const [showTimer, setShowTimer] = useState(false);
+  const [, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!a.timerEndsAt) return;
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, [a.timerEndsAt]);
+
+  const story = findStory(a.tts.storyId);
+  if (a.active.length === 0 && !story) return null;
+  if (hideOn) return null;
+  const titles = [
+    ...a.active.map(v => findSound(v.id)?.title ?? v.id),
+    ...(story ? [`📖 ${story.title}`] : [])
+  ].join(" + ");
+
+  return (
+    <div className="fixed bottom-[72px] inset-x-0 z-30 px-3 pointer-events-none">
+      <div className="max-w-md mx-auto pointer-events-auto">
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-soft shadow-soft p-3 space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="text-xl">♪</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium truncate">{titles}</div>
+              <div className="text-xs text-ink-400 dark:text-ink-300">
+                {a.active.length > 0 && `${a.active.length} 轨`}
+                {story && `${a.active.length > 0 ? " · " : ""}故事 ${a.tts.paragraphIdx+1}/${a.tts.totalParagraphs}${a.tts.paused ? "（已暂停）" : ""}`}
+                {a.timerEndsAt && ` · 定时 ${timerRemaining(a.timerEndsAt)}`}
+              </div>
+            </div>
+            {story && (
+              <button onClick={()=>a.tts.paused ? a.resumeStory() : a.pauseStory()}
+                className="px-3 py-1 rounded-pill text-xs bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900">
+                {a.tts.paused ? "继续" : "暂停"}
+              </button>
+            )}
+            <button onClick={()=>setShowTimer(v=>!v)}
+              className={cls("px-3 py-1 rounded-pill text-xs",
+                a.timerEndsAt ? "bg-amber-100 text-amber-500 dark:bg-amber-500/20 dark:text-amber-100"
+                              : "bg-ink-100 text-ink-500 dark:bg-ink-700 dark:text-ink-200")}>⏱</button>
+            <button onClick={()=>{ if(a.active.length>0) a.stopAll(); if(story) a.stopStory(); }}
+              className="px-3 py-1 rounded-pill text-xs bg-ink-100 text-ink-500 dark:bg-ink-700 dark:text-ink-200">停止</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-ink-400">音量</span>
+            <input type="range" min={0} max={1} step={0.01} value={a.masterVolume}
+              onChange={(e)=>a.setMasterVolume(Number(e.target.value))}
+              className="flex-1 accent-moon-500 dark:accent-moon-300"/>
+          </div>
+          {showTimer && (
+            <div className="pt-1 border-t border-ink-100 dark:border-ink-700 space-y-2">
+              <div className="text-xs text-ink-500 dark:text-ink-300">定时关闭（最后 5 秒淡出）</div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {TIMER_OPTIONS.map(v => (
+                  <button key={v} onClick={()=>{ a.setTimer(v); setShowTimer(false); }}
+                    className="px-2 py-1.5 rounded-md text-xs bg-ink-50 dark:bg-ink-700 hover:bg-moon-50 dark:hover:bg-moon-700/40">
+                    {v} 分
+                  </button>
+                ))}
+              </div>
+              {a.timerEndsAt && (
+                <button onClick={()=>{ a.setTimer(null); setShowTimer(false); }}
+                  className="w-full text-xs text-ink-400 dark:text-ink-300 py-1">
+                  取消定时（剩余 {timerRemaining(a.timerEndsAt)}）
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Sounds
+============================================================ */
+function pickRecommended(diary){
+  if (!diary) return "rain";
+  const m = diary.moodTags || [];
+  if (m.includes("anxious") || m.includes("stressed")) return "rain";
+  if (diary.wakeCount >= 2) return "brown";
+  if (m.includes("low")) return "fire";
+  if (diary.subjectiveQuality <= 2) return "ocean";
+  return "pink";
+}
+
+function SoundsPage(){
+  const { state, toggleFavoriteSound, trackRecentSound } = useStore();
+  const a = useAudio();
+  const [tab, setTab] = useState("all");
+  const supported = audioEngine.isSupported();
+  const [ttsSupported, setTtsSupported] = useState(null);
+  useEffect(() => {
+    if (!ttsEngine.isSupported()) { setTtsSupported(false); return; }
+    ttsEngine.hasChineseVoice().then(setTtsSupported);
+  }, []);
+  const lastDiary = useMemo(() => {
+    if (state.diaries.length === 0) return null;
+    return [...state.diaries].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  }, [state.diaries]);
+  const recId = pickRecommended(lastDiary);
+  const recSound = findSound(recId);
+
+  if (!supported){
+    return (
+      <div className="px-5 pt-10 pb-12 space-y-3">
+        <h1 className="text-2xl font-medium">助眠声音</h1>
+        <Card className="text-ink-500 dark:text-ink-300">
+          你的浏览器不支持 Web Audio API。请用最新版 Chrome / Safari / Edge 试试。
+        </Card>
+      </div>
+    );
+  }
+
+  const visible = (() => {
+    if (tab === "all") return SOUNDS_CATALOG;
+    if (tab === "favorites") return SOUNDS_CATALOG.filter(s => state.favoriteSounds.includes(s.id));
+    return SOUNDS_CATALOG.filter(s => s.category === tab);
+  })();
+
+  const playing = (id) => a.active.some(v => v.id === id);
+  const volOf = (id) => a.active.find(v => v.id === id)?.volume ?? 0;
+  const onToggle = async (id) => {
+    const wasPlaying = playing(id);
+    await a.toggle(id);
+    if (!wasPlaying) trackRecentSound(id);
+  };
+
+  return (
+    <div className="px-5 pt-10 pb-32 space-y-5">
+      <header>
+        <h1 className="text-2xl font-medium">助眠声音</h1>
+        <p className="text-sm text-ink-500 dark:text-ink-300 mt-1">
+          全部端侧合成，零版权。最多可同时混 3 轨。
+        </p>
+        <p className="text-xs text-ink-400 dark:text-ink-300 mt-2 leading-relaxed">
+          💡 单文件版本无法加载真实录音；想听更真实的雨/海浪/篝火，请使用 Next.js 版本（运行 <code>npm run fetch-sounds</code>）。
+        </p>
+      </header>
+
+      {recSound && (
+        <section className="space-y-2">
+          <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">今晚的推荐</div>
+          <button onClick={()=>onToggle(recSound.id)} className="w-full text-left">
+            <Card className={cls("transition border-l-4",
+              playing(recSound.id) ? "border-l-score-high bg-moon-50 dark:bg-moon-700/30" : "border-l-moon-300")}>
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">{recSound.icon}</div>
+                <div className="flex-1">
+                  <div className="font-medium">{recSound.title}</div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 mt-1 leading-relaxed">{recSound.desc}</div>
+                  <div className="text-xs text-moon-600 dark:text-moon-200 mt-2">
+                    {lastDiary ? "基于你昨晚的记录推荐" : "新用户的默认推荐"}
+                  </div>
+                </div>
+                <div className="text-xl">{playing(recSound.id) ? "▮▮" : "▶"}</div>
+              </div>
+            </Card>
+          </button>
+        </section>
+      )}
+
+      {state.recentSounds.length > 0 && (
+        <section className="space-y-2">
+          <div className="text-sm font-medium text-ink-500 dark:text-ink-300 px-1">最近播放</div>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {state.recentSounds.map(id => findSound(id)).filter(Boolean).map(s => (
+              <button key={s.id} onClick={()=>onToggle(s.id)}
+                className={cls("flex-shrink-0 px-3 py-2 rounded-soft border text-sm",
+                  playing(s.id) ? "bg-moon-50 border-moon-300 text-moon-700 dark:bg-moon-700/40 dark:text-moon-100"
+                                : "bg-white border-ink-200 dark:bg-ink-800 dark:border-ink-700")}>
+                <span className="mr-1">{s.icon}</span>{s.title}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+        {[{id:"all",label:"全部"},
+          {id:"nature",label:"自然"},
+          {id:"white-noise",label:"白噪音"},
+          {id:"stories",label:"📖 故事"},
+          {id:"favorites",label:"★ 收藏"}].map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            className={cls("px-4 py-1.5 rounded-pill text-sm whitespace-nowrap",
+              tab===t.id ? "bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900"
+                         : "bg-ink-100 dark:bg-ink-700 text-ink-500 dark:text-ink-200")}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab==="stories" && (
+        <div className="space-y-3">
+          {ttsSupported===false && (
+            <Card className="bg-amber-50 dark:bg-amber-500/10 border-amber-200 text-sm leading-relaxed text-amber-500 dark:text-amber-100">
+              你的设备未安装中文语音库，浏览器朗读暂不可用。你仍然可以下面静默阅读这些故事；真人录制版本会在 V2 上线。
+            </Card>
+          )}
+          {ttsSupported && (
+            <Card className="bg-moon-50 dark:bg-moon-700/30 border-moon-200 dark:border-moon-700 text-sm leading-relaxed text-ink-700 dark:text-ink-100">
+              使用浏览器系统语音朗读，慢速 + 低音调更助眠。故事可以和上面的环境声叠加（雨声 + 故事）。
+            </Card>
+          )}
+          {STORIES.map(s => {
+            const isCurrent = a.tts.storyId === s.id;
+            const progress = isCurrent && s.paragraphs.length>0 ? Math.min(100, (a.tts.paragraphIdx / s.paragraphs.length)*100) : 0;
+            return (
+              <Card key={s.id} className={cls("transition", isCurrent && "bg-moon-50 dark:bg-moon-700/30")}>
+                <div className="flex items-start gap-4">
+                  <div className="text-3xl flex-shrink-0">{s.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">{s.title}</div>
+                    <div className="text-xs text-ink-400 dark:text-ink-300 mt-0.5">{s.subtitle} · 约 {s.estMinutes} 分钟</div>
+                    {isCurrent ? (
+                      <div className="mt-3 space-y-2">
+                        <div className="text-sm text-ink-700 dark:text-ink-100 leading-relaxed italic">
+                          "{s.paragraphs[Math.min(a.tts.paragraphIdx, s.paragraphs.length-1)]?.replace(/。.+$/, "。")}"
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-ink-400 dark:text-ink-300">
+                          <span>第 {a.tts.paragraphIdx+1} / {a.tts.totalParagraphs} 段</span>
+                          {a.tts.engine==="cloud" && <span className="text-score-high">· AI 朗读</span>}
+                          {a.tts.loading && <span className="text-moon-600 dark:text-moon-200">· 合成中…</span>}
+                        </div>
+                        {a.tts.error && (
+                          <div className="text-xs text-amber-500 dark:text-amber-100">⚠ {a.tts.error}，已切换到浏览器朗读</div>
+                        )}
+                        <div className="h-1 bg-ink-100 dark:bg-ink-700 rounded-full">
+                          <div className="h-1 bg-moon-400 dark:bg-moon-300 rounded-full transition-all" style={{width:`${Math.min(100,(a.tts.paragraphIdx/a.tts.totalParagraphs)*100)}%`}}/>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button onClick={()=>a.tts.paused ? a.resumeStory() : a.pauseStory()}
+                            className="px-3 py-1.5 rounded-pill text-xs bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900">
+                            {a.tts.paused ? "继续" : "暂停"}
+                          </button>
+                          <button onClick={()=>a.toggleStory(s.id)}
+                            className="px-3 py-1.5 rounded-pill text-xs bg-ink-100 dark:bg-ink-700 text-ink-500 dark:text-ink-200">停止</button>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-xs text-ink-400">音量</span>
+                            <input type="range" min={0} max={1} step={0.01} value={a.ttsVolume}
+                              onChange={(e)=>a.setStoryVolume(Number(e.target.value))}
+                              className="flex-1 accent-moon-500 dark:accent-moon-300"/>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-sm text-ink-500 dark:text-ink-300 mt-1.5 leading-relaxed">{s.paragraphs[0]?.slice(0,70)}…</div>
+                        <div className="mt-3 flex gap-2 items-center">
+                          <button onClick={()=>a.toggleStory(s.id, { proxyUrl: state.settings.cloudTTSProxyUrl, voice: state.settings.ttsCloudVoice })} disabled={ttsSupported===false && !state.settings.cloudTTSProxyUrl}
+                            className="px-4 py-1.5 rounded-pill text-sm bg-moon-500 text-white dark:bg-moon-300 dark:text-ink-900 disabled:opacity-50">朗读</button>
+                          {state.settings.cloudTTSProxyUrl && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-score-high/20 text-score-high">豆包 AI 朗读</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {tab !== "stories" && (
+      <div className="space-y-3">
+        {visible.length === 0 && (
+          <Card className="text-center py-8 text-ink-400 dark:text-ink-300">
+            {tab==="favorites" ? "还没有收藏的声音" : "没有声音"}
+          </Card>
+        )}
+        {visible.map(s => {
+          const isPlaying = playing(s.id);
+          const vol = volOf(s.id);
+          const isFav = state.favoriteSounds.includes(s.id);
+          return (
+            <Card key={s.id} className={cls("transition", isPlaying && "bg-moon-50 dark:bg-moon-700/30")}>
+              <div className="flex items-start gap-4">
+                <button onClick={()=>onToggle(s.id)} className="text-3xl flex-shrink-0">
+                  {isPlaying ? "■" : s.icon}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{s.title}</span>
+                    <button onClick={()=>toggleFavoriteSound(s.id)}
+                      className={cls("text-sm transition", isFav ? "text-amber-300" : "text-ink-300 dark:text-ink-600")}>★</button>
+                  </div>
+                  <div className="text-sm text-ink-500 dark:text-ink-300 mt-1 leading-relaxed">{s.desc}</div>
+                  {isPlaying && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs text-ink-400">音量</span>
+                      <input type="range" min={0} max={1} step={0.01} value={vol}
+                        onChange={(e)=>a.setVoiceVolume(s.id, Number(e.target.value))}
+                        className="flex-1 accent-moon-500 dark:accent-moon-300"/>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      )}
+
+      <p className="text-xs text-ink-400 dark:text-ink-300 leading-relaxed">
+        点击图标开始播放；再次点击停止。同时最多 3 轨，超过会自动移除最早的一轨。底部播放条可调主音量与定时关闭。
+      </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   Pages: Me / Settings / Legal
+============================================================ */
+const TROUBLE_LABEL = {
+  hard_to_fall_asleep:"入睡困难", easy_to_wake:"半夜易醒",
+  early_wake:"早醒", many_dreams:"多梦", snoring:"打鼾", unknown:"未确定"
+};
+
+function MePage({ onNav }){
+  const { state } = useStore();
+  const { profile, diaries, practices, plan } = state;
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-moon-200 dark:bg-moon-700 flex items-center justify-center text-2xl">◐</div>
+        <div>
+          <div className="text-lg font-medium">{profile.nickname || "匿名用户"}</div>
+          <div className="text-xs text-ink-400 dark:text-ink-300">
+            目标睡眠 {Math.floor(profile.targetSleepMin/60)}h{profile.targetSleepMin%60?` ${profile.targetSleepMin%60}m`:""}
+            {" · "}{profile.targetBedtime}–{profile.targetWakeTime}
+          </div>
+        </div>
+      </header>
+
+      <Card>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div><div className="text-xs text-ink-400">日记总数</div><div className="text-xl font-medium mt-1">{diaries.length}</div></div>
+          <div><div className="text-xs text-ink-400">完成训练</div><div className="text-xl font-medium mt-1">{practices.filter(p=>p.completed).length}</div></div>
+          <div><div className="text-xs text-ink-400">计划进度</div><div className="text-xl font-medium mt-1">{plan?`Day ${planDayIndex(plan)}`:"—"}</div></div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="text-sm font-medium mb-2">我的睡眠困扰</div>
+        <div className="flex flex-wrap gap-2">
+          {profile.troubleTypes.map(t => (
+            <span key={t} className="px-3 py-1 rounded-pill text-xs bg-moon-50 text-moon-600 dark:bg-moon-700/40 dark:text-moon-100">
+              {TROUBLE_LABEL[t] || t}
+            </span>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-0 overflow-hidden">
+        <ul className="divide-y divide-ink-100 dark:divide-ink-700">
+          <Row label="历史日记" onClick={()=>onNav("diary")}/>
+          <Row label="睡眠报告" onClick={()=>onNav("reports")}/>
+          <Row label="我的计划" onClick={()=>onNav("plan")}/>
+          <Row label="设置" onClick={()=>onNav("settings")}/>
+          <Row label="医疗免责声明" onClick={()=>onNav("legal-disclaimer")}/>
+          <Row label="隐私政策" onClick={()=>onNav("legal-privacy")}/>
+        </ul>
+      </Card>
+
+      <div className="text-center text-xs text-ink-400 dark:text-ink-300">
+        安眠岛 · Hush v0.1 单文件原型<br/>
+        本应用是生活方式工具，不能用于诊断或治疗。
+      </div>
+    </div>
+  );
+}
+
+const Row = ({ label, onClick }) => (
+  <li>
+    <button onClick={onClick} className="w-full flex items-center justify-between p-4 hover:bg-ink-50 dark:hover:bg-ink-700/40">
+      <span>{label}</span><span className="text-ink-300">›</span>
+    </button>
+  </li>
+);
+
+function SettingsPage({ onNav }){
+  const { state, updateSettings, resetAll } = useStore();
+  const s = state.settings;
+  const [confirming, setConfirming] = useState(false);
+
+  const exportData = () => {
+    const json = JSON.stringify(state, null, 2);
+    const blob = new Blob([json], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `hush-export-${Date.now()}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="px-5 pt-10 pb-12 space-y-5">
+      <header><h1 className="text-2xl font-medium">设置</h1></header>
+
+      <section className="space-y-2">
+        <div className="text-sm text-ink-500 dark:text-ink-300 px-1">外观</div>
+        <Card>
+          <div className="text-sm text-ink-500 dark:text-ink-300 mb-2">主题模式</div>
+          <SelectGroup options={[
+            {value:"system", label:"跟随系统"},
+            {value:"auto-night", label:"按时间段自动", hint:`${s.autoNightStart}–${s.autoNightEnd}`},
+            {value:"dark", label:"始终深色"}
+          ]} value={s.themeMode} onChange={(v)=>updateSettings({themeMode:v})} columns={1}/>
+        </Card>
+        {s.themeMode==="auto-night" && (
+          <Card>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">夜间开始</div>
+                <input type="time" value={s.autoNightStart} onChange={(e)=>updateSettings({autoNightStart:e.target.value})}
+                  className="w-full text-base bg-transparent outline-none"/>
+              </label>
+              <label>
+                <div className="text-sm text-ink-500 dark:text-ink-300 mb-1">夜间结束</div>
+                <input type="time" value={s.autoNightEnd} onChange={(e)=>updateSettings({autoNightEnd:e.target.value})}
+                  className="w-full text-base bg-transparent outline-none"/>
+              </label>
+            </div>
+          </Card>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <div className="text-sm text-ink-500 dark:text-ink-300 px-1">AI 朗读（睡前故事）</div>
+        <Card className="space-y-3">
+          <div className="text-xs text-ink-500 dark:text-ink-300 leading-relaxed">
+            使用 <strong>火山引擎豆包 TTS 2.0</strong> 的高保真中文朗读，比浏览器原生语音自然得多。<br/>
+            <span className="text-ink-400">
+              单文件 hush.html 无法直连豆包（CORS + 凭证暴露问题）。需要你自行部署 Next.js 应用，把那个应用的 <code>/api/tts</code> 完整 URL 填到下面。<br/>
+              留空则使用浏览器原生朗读。
+            </span>
+          </div>
+          <label className="block text-sm">
+            <div className="text-ink-500 dark:text-ink-300 mb-1">TTS 代理 URL</div>
+            <input type="url" placeholder="https://your-domain.com/api/tts" value={s.cloudTTSProxyUrl||""}
+              onChange={(e)=>updateSettings({cloudTTSProxyUrl: e.target.value.trim()})}
+              className="w-full px-3 py-2 rounded-soft bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 text-sm font-mono"
+              autoComplete="off"/>
+          </label>
+          {s.cloudTTSProxyUrl && (
+            <label className="block text-sm">
+              <div className="text-ink-500 dark:text-ink-300 mb-1">音色</div>
+              <select value={s.ttsCloudVoice||"zh_female_qingxin_v2_mars_bigtts"} onChange={(e)=>updateSettings({ttsCloudVoice:e.target.value})}
+                className="w-full px-3 py-2 rounded-soft bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 text-sm">
+                {CLOUD_TTS_VOICES.map(v=><option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+            </label>
+          )}
+        </Card>
+      </section>
+
+      <section className="space-y-2">
+        <div className="text-sm text-ink-500 dark:text-ink-300 px-1">数据</div>
+        <Card className="space-y-3">
+          <Button block variant="outline" onClick={exportData}>导出我的数据 (JSON)</Button>
+          {!confirming ? (
+            <Button block variant="danger-soft" onClick={()=>setConfirming(true)}>清空全部数据</Button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-ink-500 dark:text-ink-300">这会移除所有日记、计划与设置。无法恢复。</p>
+              <div className="flex gap-2">
+                <Button block variant="ghost" onClick={()=>setConfirming(false)}>取消</Button>
+                <Button block variant="danger-soft" onClick={()=>{ resetAll(); onNav("home"); }}>我确定，清空</Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      </section>
+
+      <section className="space-y-2">
+        <div className="text-sm text-ink-500 dark:text-ink-300 px-1">关于</div>
+        <Card>
+          <div className="text-sm text-ink-500 dark:text-ink-300">单文件原型 · v0.1</div>
+          <div className="text-xs text-ink-400 mt-1 break-all">用户 ID：{state.profile.userId}</div>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+function LegalPage({ which }){
+  if (which === "privacy"){
+    return (
+      <article className="px-5 pt-10 pb-12 space-y-4 leading-relaxed">
+        <h1 className="text-2xl font-medium">隐私政策（原型版）</h1>
+        <p>我们认为睡眠数据是高度敏感的个人信息。本原型遵循以下原则：</p>
+        <h2 className="text-lg font-medium pt-2">本地优先</h2>
+        <p>所有睡眠日记、备注、计划、风险标记<strong>默认仅存储在你的设备上</strong>（浏览器 localStorage）。除非你主动开启同步，否则不会上传。</p>
+        <h2 className="text-lg font-medium pt-2">关键词识别在端侧完成</h2>
+        <p>当你的备注中出现自伤 / 自杀相关关键词时，系统会立即在本地识别并展示心理援助资源。识别过程<strong>不上传任何文本</strong>。</p>
+        <h2 className="text-lg font-medium pt-2">不收集敏感生理数据</h2>
+        <p>本原型不接入手环、手表，也不读取麦克风、加速度计。</p>
+        <p className="text-sm text-ink-400 dark:text-ink-300 pt-4">最后更新：2026-05-10</p>
+      </article>
+    );
+  }
+  return (
+    <article className="px-5 pt-10 pb-12 space-y-4 leading-relaxed">
+      <h1 className="text-2xl font-medium">医疗免责声明</h1>
+      <p>「安眠岛 · Hush」是一款<strong>生活方式工具</strong>，不属于医疗器械，不能用于诊断、治疗或预防任何疾病。</p>
+      <p>应用中的所有建议、洞察、计划，均基于公开的睡眠卫生原则与认知行为疗法（CBT-I）思路整理，仅作为生活方式参考，不能替代医生、临床心理师或睡眠专科的诊疗。</p>
+      <p>如果你出现以下情况之一，请尽快前往医院睡眠科 / 精神心理科或专业医师就诊：</p>
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>持续 3 个月以上的失眠，并伴随严重日间功能损害</li>
+        <li>严重情绪低落、持续焦虑或自伤念头</li>
+        <li>打鼾伴随憋醒、白天严重嗜睡（疑似睡眠呼吸暂停）</li>
+        <li>已经使用助眠药物且需要调整方案</li>
+        <li>怀孕、哺乳期或患有其他慢性疾病期间</li>
+      </ul>
+      <p>本应用<strong>不会</strong>为你输出诊断结论，也不会就处方药、剂量、停药等给出指导。</p>
+      <p className="text-sm text-ink-400 dark:text-ink-300 pt-4">最后更新：2026-05-10</p>
+    </article>
+  );
+}
+
+/* ============================================================
+   BottomNav
+============================================================ */
+const TABS = [
+  { id:"home", label:"首页", icon:"🌙" },
+  { id:"sounds", label:"助眠", icon:"♪" },
+  { id:"practice", label:"训练", icon:"✿" },
+  { id:"plan", label:"计划", icon:"▦" },
+  { id:"me", label:"我的", icon:"◐" }
+];
+function BottomNav({ active, onNav }){
+  return (
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-[var(--card)] border-t border-[var(--line)]">
+      <ul className="max-w-md mx-auto grid grid-cols-5 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {TABS.map(t => {
+          const a = active===t.id || (t.id==="home" && (active==="reports"||active==="diary"||active==="diary-new"));
+          return (
+            <li key={t.id}>
+              <button onClick={()=>onNav(t.id)} className={cls(
+                "w-full flex flex-col items-center justify-center py-1.5 rounded-lg transition",
+                a ? "text-moon-600 dark:text-moon-200" : "text-ink-400 dark:text-ink-300"
+              )}>
+                <span className="text-xl leading-none">{t.icon}</span>
+                <span className="text-[11px] mt-0.5">{t.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/* ============================================================
+   App Shell
+============================================================ */
+function AppRouter(){
+  const { state } = useStore();
+  const [view, setView] = useState("home");
+  const [breathMethodId, setBreathMethodId] = useState("478");
+  const profile = state.profile;
+  const showNav = !["onboarding","breathing"].includes(view);
+  const hideMiniPlayer = view === "breathing" || !profile || !profile.disclaimerAcceptedAt;
+
+  if (!profile || !profile.disclaimerAcceptedAt){
+    return <Onboarding onDone={()=>setView("home")}/>;
+  }
+
+  const chooseBreath = (id) => { setBreathMethodId(id); setView("breathing"); };
+
+  let page;
+  switch (view){
+    case "home": page = <HomePage onNav={setView} onChooseBreath={chooseBreath}/>; break;
+    case "diary": page = <DiaryListPage onNav={setView}/>; break;
+    case "diary-new": page = <DiaryNewPage onDone={()=>setView("reports")}/>; break;
+    case "reports": page = <ReportsPage/>; break;
+    case "plan": page = <PlanPage/>; break;
+    case "practice": page = <PracticePage onNav={setView} onChooseBreath={chooseBreath}/>; break;
+    case "breathing": page = <BreathingPage methodId={breathMethodId} onBack={()=>setView("practice")}/>; break;
+    case "worry": page = <WorryPage onBack={()=>setView("practice")}/>; break;
+    case "reframe": page = <ReframePage onBack={()=>setView("practice")}/>; break;
+    case "sounds": page = <SoundsPage/>; break;
+    case "me": page = <MePage onNav={setView}/>; break;
+    case "settings": page = <SettingsPage onNav={setView}/>; break;
+    case "legal-disclaimer": page = <LegalPage which="disclaimer"/>; break;
+    case "legal-privacy": page = <LegalPage which="privacy"/>; break;
+    default: page = <HomePage onNav={setView}/>;
+  }
+
+  return (
+    <div className="min-h-dvh max-w-md mx-auto pb-24">
+      <main>{page}</main>
+      <MiniPlayer hideOn={hideMiniPlayer}/>
+      {showNav && <BottomNav active={view} onNav={setView}/>}
+    </div>
+  );
+}
+
+function App(){
+  return (
+    <StoreProvider>
+      <ThemeManager/>
+      <AudioProvider>
+        <AppRouter/>
+      </AudioProvider>
+    </StoreProvider>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App/>);
+document.getElementById("boot")?.remove();
+  </script>
+</body>
+</html>

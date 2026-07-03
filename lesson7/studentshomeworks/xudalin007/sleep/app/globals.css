@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+  --bg: #f7f5f2;
+  --bg-soft: #ede9e2;
+  --fg: #2b2823;
+  --fg-soft: #5d574e;
+  --accent: #65557a;
+  --accent-soft: #e6def0;
+  --line: #d8d2c7;
+  --card: #ffffff;
+  --shadow: 0 6px 24px -8px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --bg: #100d14;
+  --bg-soft: #1f1a26;
+  --fg: #ede9e2;
+  --fg-soft: #b6aea1;
+  --accent: #cdbee0;
+  --accent-soft: #332b3f;
+  --line: #2b2823;
+  --card: #1b1916;
+  --shadow: 0 6px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* 夜间模式整体动画放慢 */
+.dark * {
+  transition-duration: 320ms !important;
+}
+
+/* 隐藏数字输入框默认 spinner */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 滚动条柔化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
