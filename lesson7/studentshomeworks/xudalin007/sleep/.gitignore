@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+.env*
+!.env.example
+.data
+.DS_Store
+*.log
+.idea
+.vscode
+tsconfig.tsbuildinfo
+.tmp-demo
+aliyun-test.mp3
+aliyun-verify.mp3
