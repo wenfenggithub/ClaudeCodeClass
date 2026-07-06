@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幼升小暑期学习打卡</title>
+  <style>
+    /* ==================== 基础样式 ==================== */
+    :root {
+      --primary: #4A90D9;
+      --primary-light: #EBF3FC;
+      --success: #52C41A;
+      --success-light: #F0FAE8;
+      --warning: #FAAD14;
+      --warning-light: #FFFBE6;
+      --accent: #FF6B6B;
+      --accent-light: #FFF0F0;
+      --highlight: #9B59B6;
+      --highlight-light: #F5EEF9;
+      --bg: #F5F7FA;
+      --card-bg: #FFFFFF;
+      --text: #2C3E50;
+      --text-secondary: #7F8C8D;
+      --border: #E8ECF1;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    /* ==================== 头部导航 ==================== */
+    .header {
+      background: var(--card-bg);
+      padding: 20px 24px;
+      border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      font-size: 22px;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .nav-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .nav-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* ==================== 页面切换 ==================== */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .page-header h2 {
+      font-size: 20px;
+      color: var(--text);
+    }
+
+    /* ==================== 仪表盘 ==================== */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      border-left: 4px solid var(--primary);
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-card.success { border-left-color: var(--success); }
+    .stat-card.accent { border-left-color: var(--accent); }
+    .stat-card.highlight { border-left-color: var(--highlight); }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-card.success .stat-value { color: var(--success); }
+    .stat-card.accent .stat-value { color: var(--accent); }
+    .stat-card.highlight .stat-value { color: var(--highlight); }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ==================== 今日打卡 ==================== */
+    .today-badge {
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .checkin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .checkin-item {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s;
+    }
+
+    .checkin-item.done {
+      background: var(--success-light);
+      border-left: 4px solid var(--success);
+    }
+
+    .checkin-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .checkin-toggle.done {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+
+    .checkin-info { flex: 1; min-width: 0; }
+    .checkin-title { font-size: 15px; font-weight: 600; }
+    .checkin-category {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg);
+      padding: 1px 8px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-top: 2px;
+    }
+
+    .checkin-note {
+      width: 160px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .checkin-note:focus { border-color: var(--primary); }
+
+    /* ==================== 任务管理 ==================== */
+    .filter-bar {
+      margin-bottom: 16px;
+    }
+
+    .filter-bar select {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: var(--card-bg);
+      outline: none;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-item {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+
+    .task-item.inactive {
+      opacity: 0.55;
+    }
+
+    .task-info { flex: 1; min-width: 0; }
+    .task-name { font-size: 15px; font-weight: 600; }
+
+    .task-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 10px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* ==================== 按钮 ==================== */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: #3A7BC8; }
+
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--border); }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .btn-success:hover { background: #45A818; }
+
+    .btn-danger {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-danger:hover { background: #E55A5A; }
+
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    .btn-save-checkin {
+      background: var(--primary);
+      color: #fff;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 16px;
+    }
+
+    .btn-save-checkin:hover { background: #3A7BC8; }
+
+    /* ==================== 表单 ==================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .modal h3 { margin-bottom: 16px; font-size: 18px; }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .required { color: var(--accent); }
+
+    .form-group input[type="text"],
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--primary);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* ==================== 历史记录 ==================== */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .history-day {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .history-day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-date {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .history-rate {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+
+    .history-rate.good { background: var(--success-light); color: var(--success); }
+    .history-rate.medium { background: var(--warning-light); color: var(--warning); }
+    .history-rate.low { background: var(--accent-light); color: var(--accent); }
+
+    .history-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    .history-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .history-dot.done { background: var(--success); }
+    .history-dot.undone { background: var(--border); }
+
+    .history-task-title { flex: 1; }
+    .history-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* ==================== 统计分析 ==================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .category-table-wrapper {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .category-table-wrapper h3 {
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .data-table th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+
+    .data-table .count-cell {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* ==================== 分页 ==================== */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .pagination button {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .pagination button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ==================== Toast ==================== */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--accent); }
+
+    /* ==================== 空状态 ==================== */
+    .empty-hint {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 40px 20px;
+      font-size: 14px;
+    }
+
+    /* ==================== 响应式 ==================== */
+    @media (max-width: 640px) {
+      .logo { font-size: 18px; }
+      .nav-btn { padding: 6px 12px; font-size: 13px; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 22px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+      .checkin-item {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+      }
+      .checkin-note { width: 100%; }
+
+      .task-item {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+      }
+      .task-actions { width: 100%; justify-content: flex-end; }
+
+      .modal { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部导航 -->
+    <header class="header">
+      <h1 class="logo">🌻 幼升小暑期学习打卡</h1>
+      <nav class="nav" id="nav">
+        <button class="nav-btn active" data-page="dashboard">📊 首页</button>
+        <button class="nav-btn" data-page="checkin">✅ 今日打卡</button>
+        <button class="nav-btn" data-page="tasks">📋 任务管理</button>
+        <button class="nav-btn" data-page="history">📅 历史记录</button>
+        <button class="nav-btn" data-page="stats">📈 统计分析</button>
+      </nav>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main" id="mainContent">
+      <!-- 首页仪表盘 -->
+      <section class="page active" id="page-dashboard">
+        <div class="dashboard-grid" id="dashboardGrid">
+          <div class="stat-card">
+            <div class="stat-label">📅 今天日期</div>
+            <div class="stat-value" id="statDate">--</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-label">⏰ 暑假倒计时</div>
+            <div class="stat-value" id="statCountdown">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📝 今日任务</div>
+            <div class="stat-value" id="statTodayTotal">--</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-label">✅ 已完成</div>
+            <div class="stat-value" id="statTodayDone">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📊 完成率</div>
+            <div class="stat-value" id="statTodayRate">--</div>
+          </div>
+          <div class="stat-card accent">
+            <div class="stat-label">🔥 连续打卡</div>
+            <div class="stat-value" id="statStreak">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📌 累计打卡次数</div>
+            <div class="stat-value" id="statTotalDone">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📅 累计打卡天数</div>
+            <div class="stat-value" id="statTotalDays">--</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 今日打卡 -->
+      <section class="page" id="page-checkin">
+        <div class="page-header">
+          <h2>✅ 今日打卡</h2>
+          <span class="today-badge" id="checkinDate"></span>
+        </div>
+        <div class="checkin-list" id="checkinList">
+          <p class="empty-hint">加载中...</p>
+        </div>
+      </section>
+
+      <!-- 任务管理 -->
+      <section class="page" id="page-tasks">
+        <div class="page-header">
+          <h2>📋 任务管理</h2>
+          <button class="btn btn-primary" onclick="showTaskForm()">+ 新增任务</button>
+        </div>
+
+        <!-- 新增/编辑任务表单 -->
+        <div class="modal-overlay" id="taskFormModal" style="display:none;">
+          <div class="modal">
+            <h3 id="taskFormTitle">新增任务</h3>
+            <form id="taskForm" onsubmit="saveTask(event)">
+              <input type="hidden" id="taskId">
+              <div class="form-group">
+                <label for="taskTitle">任务名称 <span class="required">*</span></label>
+                <input type="text" id="taskTitle" required maxlength="200" placeholder="请输入任务名称">
+              </div>
+              <div class="form-group">
+                <label for="taskCategory">分类</label>
+                <select id="taskCategory">
+                  <option value="拼音">拼音</option>
+                  <option value="识字">识字</option>
+                  <option value="数学">数学</option>
+                  <option value="阅读">阅读</option>
+                  <option value="英语">英语</option>
+                  <option value="运动">运动</option>
+                  <option value="写字">写字</option>
+                  <option value="生活习惯">生活习惯</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="taskDesc">任务说明</label>
+                <textarea id="taskDesc" rows="3" placeholder="请输入任务说明（可选）"></textarea>
+              </div>
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="taskActive" checked> 启用任务
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideTaskForm()">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 任务筛选 -->
+        <div class="filter-bar">
+          <select id="taskFilterCategory" onchange="loadTasks()">
+            <option value="">全部分类</option>
+            <option value="拼音">拼音</option>
+            <option value="识字">识字</option>
+            <option value="数学">数学</option>
+            <option value="阅读">阅读</option>
+            <option value="英语">英语</option>
+            <option value="运动">运动</option>
+            <option value="写字">写字</option>
+            <option value="生活习惯">生活习惯</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+        <div class="task-list" id="taskList">
+          <p class="empty-hint">暂无任务，点击右上角按钮添加</p>
+        </div>
+      </section>
+
+      <!-- 历史记录 -->
+      <section class="page" id="page-history">
+        <div class="page-header">
+          <h2>📅 历史记录</h2>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="empty-hint">加载中...</p>
+        </div>
+        <div class="pagination" id="historyPagination"></div>
+      </section>
+
+      <!-- 统计分析 -->
+      <section class="page" id="page-stats">
+        <div class="page-header">
+          <h2>📈 统计分析</h2>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-label">📋 总任务数</div>
+            <div class="stat-value" id="statsTotalTasks">--</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-label">✅ 累计完成次数</div>
+            <div class="stat-value" id="statsTotalDone">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📊 近7天完成率</div>
+            <div class="stat-value" id="statsRecentRate">--</div>
+          </div>
+          <div class="stat-card accent">
+            <div class="stat-label">🔥 连续打卡天数</div>
+            <div class="stat-value" id="statsStreak">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📅 累计打卡天数</div>
+            <div class="stat-value" id="statsTotalDays">--</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-label">🏆 最佳打卡日</div>
+            <div class="stat-value" id="statsBestDay">--</div>
+          </div>
+        </div>
+
+        <div class="category-table-wrapper">
+          <h3>各分类完成次数</h3>
+          <table class="data-table" id="categoryTable">
+            <thead>
+              <tr>
+                <th>分类</th>
+                <th>完成次数</th>
+              </tr>
+            </thead>
+            <tbody id="categoryTableBody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    // ==================== Supabase REST API 配置 ====================
+    const DB_URL = 'https://vivlgvwtxqdytjnpojln.supabase.co/rest/v1';
+    const DB_KEY = 'sb_publishable_kEXfWYwpz-azFUJoflRLhA_DpbXWzvS';
+    const HEADERS = {
+      'apikey': DB_KEY,
+      'Authorization': 'Bearer ' + DB_KEY,
+      'Content-Type': 'application/json'
+    };
+
+    async function dbGet(path) {
+      const res = await fetch(DB_URL + path, { headers: HEADERS });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function dbPost(path, body) {
+      const res = await fetch(DB_URL + path, {
+        method: 'POST',
+        headers: { ...HEADERS, 'Prefer': 'return=representation' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function dbPatch(path, body) {
+      const res = await fetch(DB_URL + path, {
+        method: 'PATCH',
+        headers: { ...HEADERS, 'Prefer': 'return=representation' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+    }
+
+    async function dbDelete(path) {
+      const res = await fetch(DB_URL + path, {
+        method: 'DELETE',
+        headers: HEADERS
+      });
+      if (!res.ok) throw new Error(await res.text());
+    }
+
+    // ==================== 工具函数 ====================
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+      const wd = weekdays[d.getDay()];
+      return `${month}月${day}日 星期${wd}`;
+    }
+
+    function getToday() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => { toast.className = 'toast'; }, 2500);
+    }
+
+    function getCategoryBadge(cat) {
+      const colors = {
+        '拼音': '#E74C3C', '识字': '#E67E22', '数学': '#2980B9',
+        '阅读': '#27AE60', '英语': '#8E44AD', '运动': '#16A085',
+        '写字': '#2C3E50', '生活习惯': '#D35400', '其他': '#7F8C8D'
+      };
+      const color = colors[cat] || '#7F8C8D';
+      return `<span style="background:${color}11;color:${color};font-size:12px;padding:1px 8px;border-radius:10px;">${cat}</span>`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    // ==================== 页面导航 ====================
+
+    let currentPage = 'dashboard';
+
+    function navigateTo(page) {
+      currentPage = page;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${page}`)?.classList.add('active');
+
+      switch (page) {
+        case 'dashboard': loadDashboard(); break;
+        case 'checkin': loadTodayCheckin(); break;
+        case 'tasks': loadTasks(); break;
+        case 'history': loadHistory(); break;
+        case 'stats': loadStats(); break;
+      }
+    }
+
+    document.getElementById('nav').addEventListener('click', (e) => {
+      const btn = e.target.closest('.nav-btn');
+      if (!btn) return;
+      navigateTo(btn.dataset.page);
+    });
+
+    // ==================== 首页仪表盘 ====================
+
+    async function loadDashboard() {
+      try {
+        const tasks = await dbGet('/tasks?select=*&is_active=eq.true');
+        const todayCheckins = await dbGet('/checkins?select=*&checkin_date=eq.' + getToday());
+        const allCheckins = await dbGet('/checkins?select=*');
+
+        const activeTasks = tasks || [];
+        const todayList = todayCheckins || [];
+        const all = allCheckins || [];
+
+        const today = new Date();
+        document.getElementById('statDate').textContent = formatDate(getToday());
+
+        const summerEnd = new Date(today.getFullYear(), 7, 31);
+        if (today > summerEnd) summerEnd.setFullYear(summerEnd.getFullYear() + 1);
+        const daysLeft = Math.ceil((summerEnd - today) / (1000 * 60 * 60 * 24));
+        document.getElementById('statCountdown').textContent = `${daysLeft} 天`;
+
+        const todayTotal = activeTasks.length;
+        const todayDone = todayList.filter(c => c.is_done).length;
+        const todayRate = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
+
+        const dateSet = new Set();
+        all.forEach(c => { if (c.is_done) dateSet.add(c.checkin_date); });
+        const sortedDates = Array.from(dateSet).sort().reverse();
+        let streak = 0;
+        const checkDate = new Date(getToday());
+        for (const d of sortedDates) {
+          if (d === checkDate.toISOString().split('T')[0]) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else break;
+        }
+
+        const totalDone = all.filter(c => c.is_done).length;
+
+        document.getElementById('statTodayTotal').textContent = `${todayTotal} 项`;
+        document.getElementById('statTodayDone').textContent = `${todayDone} 项`;
+        document.getElementById('statTodayRate').textContent = `${todayRate}%`;
+        document.getElementById('statStreak').textContent = `${streak} 天`;
+        document.getElementById('statTotalDone').textContent = `${totalDone} 次`;
+        document.getElementById('statTotalDays').textContent = `${dateSet.size} 天`;
+      } catch (err) {
+        console.error('加载仪表盘失败:', err);
+        showToast('加载仪表盘失败: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== 今日打卡 ====================
+
+    async function loadTodayCheckin() {
+      try {
+        document.getElementById('checkinDate').textContent = formatDate(getToday());
+
+        const tasks = await dbGet('/tasks?select=*&is_active=eq.true&order=created_at');
+        const checkins = await dbGet('/checkins?select=*&checkin_date=eq.' + getToday());
+
+        const checkinMap = {};
+        (checkins || []).forEach(c => { checkinMap[c.task_id] = c; });
+
+        const list = document.getElementById('checkinList');
+
+        if (!tasks || tasks.length === 0) {
+          list.innerHTML = '<p class="empty-hint">暂无可打卡任务，请先在任务管理中启用任务</p>';
+          return;
+        }
+
+        list.innerHTML = tasks.map(task => {
+          const c = checkinMap[task.id];
+          const isDone = c ? c.is_done : false;
+          const note = c ? (c.note || '') : '';
+          return `
+            <div class="checkin-item ${isDone ? 'done' : ''}" data-task-id="${task.id}">
+              <button class="checkin-toggle ${isDone ? 'done' : ''}"
+                      onclick="toggleCheckin(${task.id}, this)" title="点击切换完成状态">
+                ${isDone ? '✓' : ''}
+              </button>
+              <div class="checkin-info">
+                <div class="checkin-title">${escapeHtml(task.title)}</div>
+                ${getCategoryBadge(task.category)}
+                ${task.description ? `<div style="font-size:12px;color:#999;margin-top:2px;">${escapeHtml(task.description)}</div>` : ''}
+              </div>
+              <input type="text" class="checkin-note" placeholder="备注（可选）"
+                     value="${escapeHtml(note)}">
+            </div>
+          `;
+        }).join('');
+
+        list.insertAdjacentHTML('beforeend', `
+          <div style="text-align:center;">
+            <button class="btn-save-checkin" onclick="saveAllCheckins()">💾 保存打卡记录</button>
+          </div>
+        `);
+      } catch (err) {
+        console.error('加载今日打卡失败:', err);
+        showToast('加载失败: ' + err.message, 'error');
+      }
+    }
+
+    function toggleCheckin(taskId, btn) {
+      const item = btn.closest('.checkin-item');
+      const isCurrentlyDone = btn.classList.contains('done');
+
+      if (isCurrentlyDone) {
+        btn.classList.remove('done');
+        btn.textContent = '';
+        item.classList.remove('done');
+      } else {
+        btn.classList.add('done');
+        btn.textContent = '✓';
+        item.classList.add('done');
+      }
+    }
+
+    async function saveAllCheckins() {
+      try {
+        const items = document.querySelectorAll('.checkin-item');
+        const upserts = [];
+
+        items.forEach(item => {
+          const taskId = parseInt(item.dataset.taskId);
+          const isDone = item.querySelector('.checkin-toggle').classList.contains('done');
+          const note = item.querySelector('.checkin-note').value;
+
+          upserts.push({
+            task_id: taskId,
+            checkin_date: getToday(),
+            is_done: isDone,
+            note: note
+          });
+        });
+
+        // UPSERT 需要逐条处理
+        for (const item of upserts) {
+          const res = await fetch(DB_URL + '/checkins?on_conflict=task_id,checkin_date', {
+            method: 'POST',
+            headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+            body: JSON.stringify(item)
+          });
+          if (!res.ok) throw new Error(await res.text());
+        }
+        showToast('打卡记录已保存！');
+      } catch (err) {
+        console.error('保存打卡失败:', err);
+        showToast('保存失败: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== 任务管理 ====================
+
+    async function loadTasks() {
+      try {
+        const category = document.getElementById('taskFilterCategory').value;
+        const catParam = category ? '&category=eq.' + encodeURIComponent(category) : '';
+        const tasks = await dbGet('/tasks?select=*&order=created_at' + catParam);
+        const list = document.getElementById('taskList');
+
+        if (!tasks || tasks.length === 0) {
+          list.innerHTML = '<p class="empty-hint">暂无任务，点击右上角按钮添加</p>';
+          return;
+        }
+
+        list.innerHTML = tasks.map(task => `
+          <div class="task-item ${task.is_active ? '' : 'inactive'}">
+            <div class="task-info">
+              <div class="task-name">${escapeHtml(task.title)}</div>
+              <div class="task-meta">
+                ${getCategoryBadge(task.category)}
+                <span>${task.is_active ? '已启用' : '已停用'}</span>
+                ${task.description ? `<span>${escapeHtml(task.description)}</span>` : ''}
+              </div>
+            </div>
+            <div class="task-actions">
+              <button class="btn btn-secondary btn-sm" onclick="editTask(${task.id})">编辑</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id})">删除</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('加载任务失败:', err);
+        showToast('加载失败: ' + err.message, 'error');
+      }
+    }
+
+    function showTaskForm(task = null) {
+      const modal = document.getElementById('taskFormModal');
+      document.getElementById('taskFormTitle').textContent = task ? '编辑任务' : '新增任务';
+      document.getElementById('taskId').value = task ? task.id : '';
+      document.getElementById('taskTitle').value = task ? task.title : '';
+      document.getElementById('taskCategory').value = task ? task.category : '拼音';
+      document.getElementById('taskDesc').value = task ? (task.description || '') : '';
+      document.getElementById('taskActive').checked = task ? task.is_active : true;
+      modal.style.display = 'flex';
+    }
+
+    function hideTaskForm() {
+      document.getElementById('taskFormModal').style.display = 'none';
+    }
+
+    async function saveTask(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value;
+      const data = {
+        title: document.getElementById('taskTitle').value.trim(),
+        category: document.getElementById('taskCategory').value,
+        description: document.getElementById('taskDesc').value,
+        is_active: document.getElementById('taskActive').checked
+      };
+
+      try {
+        if (id) {
+          await dbPatch('/tasks?id=eq.' + id, data);
+          showToast('任务已更新');
+        } else {
+          await dbPost('/tasks', data);
+          showToast('任务已创建');
+        }
+        hideTaskForm();
+        loadTasks();
+      } catch (err) {
+        showToast('保存失败: ' + err.message, 'error');
+      }
+    }
+
+    async function editTask(id) {
+      const data = await dbGet('/tasks?select=*&id=eq.' + id);
+      if (data && data[0]) showTaskForm(data[0]);
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('确定要删除这个任务吗？相关的打卡记录也会被删除。')) return;
+      try {
+        await dbDelete('/tasks?id=eq.' + id);
+        showToast('任务已删除');
+        loadTasks();
+      } catch (err) {
+        showToast('删除失败: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('taskFormModal').addEventListener('click', function(e) {
+      if (e.target === this) hideTaskForm();
+    });
+
+    // ==================== 历史记录 ====================
+
+    let historyPage = 1;
+
+    async function loadHistory(page = 1) {
+      try {
+        historyPage = page;
+        const limit = 30;
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const { data: checkins, count } = await (async () => {
+          const res = await fetch(DB_URL + '/checkins?select=*,tasks(title,category)&order=checkin_date.desc,created_at.desc', {
+            headers: { ...HEADERS, 'Range': from + '-' + to, 'Prefer': 'count=exact' }
+          });
+          if (!res.ok) throw new Error(await res.text());
+          const contentRange = res.headers.get('content-range');
+          const total = contentRange ? parseInt(contentRange.split('/')[1]) : 0;
+          return { data: await res.json(), count: total };
+        })();
+
+        const list = document.getElementById('historyList');
+
+        if (!checkins || checkins.length === 0) {
+          list.innerHTML = '<p class="empty-hint">暂无打卡记录</p>';
+          document.getElementById('historyPagination').innerHTML = '';
+          return;
+        }
+
+        const grouped = {};
+        checkins.forEach(c => {
+          const date = c.checkin_date;
+          if (!grouped[date]) {
+            grouped[date] = { date, checkins: [], doneCount: 0, totalCount: 0 };
+          }
+          grouped[date].checkins.push(c);
+          grouped[date].totalCount++;
+          if (c.is_done) grouped[date].doneCount++;
+        });
+
+        const days = Object.values(grouped);
+
+        list.innerHTML = days.map(day => {
+          const rate = day.totalCount > 0 ? Math.round((day.doneCount / day.totalCount) * 100) : 0;
+          const rateClass = rate >= 80 ? 'good' : rate >= 50 ? 'medium' : 'low';
+          return `
+            <div class="history-day">
+              <div class="history-day-header">
+                <span class="history-date">📅 ${formatDate(day.date)}</span>
+                <span class="history-rate ${rateClass}">完成率 ${rate}% (${day.doneCount}/${day.totalCount})</span>
+              </div>
+              <div class="history-items">
+                ${day.checkins.map(c => `
+                  <div class="history-item">
+                    <span class="history-dot ${c.is_done ? 'done' : 'undone'}"></span>
+                    <span class="history-task-title">
+                      ${c.tasks ? escapeHtml(c.tasks.title) : '任务已删除'}
+                      ${c.tasks ? getCategoryBadge(c.tasks.category) : ''}
+                    </span>
+                    ${c.is_done ? '<span style="color:#52C41A;font-size:12px;">✓</span>' : '<span style="color:#ccc;font-size:12px;">✗</span>'}
+                    ${c.note ? `<span class="history-note">${escapeHtml(c.note)}</span>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const totalPages = Math.ceil((count || 0) / limit);
+        const pag = document.getElementById('historyPagination');
+        pag.innerHTML = `
+          <button ${page <= 1 ? 'disabled' : ''} onclick="loadHistory(${page - 1})">上一页</button>
+          <span style="padding:6px 12px;font-size:13px;">第 ${page} 页 / 共 ${totalPages || 1} 页</span>
+          <button ${page >= totalPages ? 'disabled' : ''} onclick="loadHistory(${page + 1})">下一页</button>
+        `;
+      } catch (err) {
+        console.error('加载历史记录失败:', err);
+        showToast('加载失败: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== 统计分析 ====================
+
+    async function loadStats() {
+      try {
+        const tasks = await dbGet('/tasks?select=*&is_active=eq.true');
+        const all = await dbGet('/checkins?select=*');
+        const todayList = await dbGet('/checkins?select=*&checkin_date=eq.' + getToday());
+
+        const activeTasks = tasks || [];
+        const allCheckins = all || [];
+        const todayCheckins = todayList || [];
+
+        const todayDone = todayCheckins.filter(c => c.is_done).length;
+        const todayRate = activeTasks.length > 0 ? Math.round((todayDone / activeTasks.length) * 100) : 0;
+
+        const totalDone = allCheckins.filter(c => c.is_done).length;
+
+        const dateSet = new Set();
+        allCheckins.forEach(c => { if (c.is_done) dateSet.add(c.checkin_date); });
+        const sortedDates = Array.from(dateSet).sort().reverse();
+        let streak = 0;
+        const checkDate = new Date(getToday());
+        for (const d of sortedDates) {
+          if (d === checkDate.toISOString().split('T')[0]) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else break;
+        }
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const start = sevenDaysAgo.toISOString().split('T')[0];
+        const recent = allCheckins.filter(c => c.checkin_date >= start);
+        const recentDone = recent.filter(c => c.is_done).length;
+        const recentRate = recent.length > 0 ? Math.round((recentDone / recent.length) * 100) : 0;
+
+        const taskMap = {};
+        activeTasks.forEach(t => { taskMap[t.id] = t; });
+        const catCount = {};
+        allCheckins.forEach(c => {
+          if (!c.is_done) return;
+          const task = taskMap[c.task_id];
+          const cat = task ? task.category : '未知';
+          catCount[cat] = (catCount[cat] || 0) + 1;
+        });
+        const byCategory = Object.entries(catCount)
+          .map(([category, count]) => ({ category, count }))
+          .sort((a, b) => b.count - a.count);
+
+        const dayCount = {};
+        allCheckins.forEach(c => {
+          if (!c.is_done) return;
+          dayCount[c.checkin_date] = (dayCount[c.checkin_date] || 0) + 1;
+        });
+        let bestDay = null, bestCount = 0;
+        Object.entries(dayCount).forEach(([date, count]) => {
+          if (count > bestCount) { bestCount = count; bestDay = date; }
+        });
+
+        document.getElementById('statsTotalTasks').textContent = `${activeTasks.length} 项`;
+        document.getElementById('statsTotalDone').textContent = `${totalDone} 次`;
+        document.getElementById('statsRecentRate').textContent = `${recentRate}%`;
+        document.getElementById('statsStreak').textContent = `${streak} 天`;
+        document.getElementById('statsTotalDays').textContent = `${dateSet.size} 天`;
+
+        if (bestDay) {
+          document.getElementById('statsBestDay').innerHTML = `
+            <div>${formatDate(bestDay)}</div>
+            <div class="stat-sub">完成 ${bestCount} 项</div>`;
+        } else {
+          document.getElementById('statsBestDay').textContent = '暂无';
+        }
+
+        const tbody = document.getElementById('categoryTableBody');
+        tbody.innerHTML = byCategory.length === 0
+          ? '<tr><td colspan="2" style="text-align:center;color:#999;">暂无数据</td></tr>'
+          : byCategory.map(item => `
+              <tr>
+                <td>${item.category}</td>
+                <td class="count-cell">${item.count} 次</td>
+              </tr>`).join('');
+      } catch (err) {
+        console.error('加载统计失败:', err);
+        showToast('加载失败: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== 初始化 ====================
+    navigateTo('dashboard');
+  </script>
+</body>
+</html>
