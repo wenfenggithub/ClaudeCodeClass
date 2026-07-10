@@ -85,8 +85,7 @@ add_text(MARGIN, Inches(0.42), Inches(12), Inches(0.4),
          [("CLAUDE CODE · 零基础 AI 编程课", 12, True, FG_DIM)])
 
 add_text(MARGIN, Inches(0.74), Inches(12.2), Inches(0.9),
-         [("七节课，", 34, True, FG),
-          ("从“哇”到能上线", 34, True, ACCENT)])
+         [("AI 分享", 34, True, FG)])
 
 add_text(MARGIN, Inches(1.52), Inches(11.6), Inches(0.7),
          [("面向零基础成年人的 AI 编程实战课 —— 你需要的不是写代码，而是学会指挥 AI。",
