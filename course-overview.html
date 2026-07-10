@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 编程课 · 课程总览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #fbfbfd;
+    --bg-2: #f5f5f7;
+    --fg: #1d1d1f;
+    --fg-dim: #6e6e73;
+    --accent: #0071e3;
+    --accent-2: #af52de;
+    --accent-3: #28a745;
+    --accent-4: #ff9500;
+    --accent-5: #ff3b30;
+    --accent-6: #5ac8fa;
+    --accent-7: #ff2d55;
+    --card: rgba(255,255,255,0.72);
+    --card-border: rgba(0,0,0,0.08);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 10px 30px rgba(0,0,0,0.07);
+  }
+
+  html, body {
+    width: 100%; min-height: 100%;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(0,113,227,0.08), transparent 60%),
+      radial-gradient(1000px 600px at 0% 110%, rgba(175,82,222,0.08), transparent 55%),
+      var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  .page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 6vh 6vw 8vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  .eyebrow {
+    font-size: 1rem;
+    color: var(--fg-dim);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: clamp(2.6rem, 5.5vw, 5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin-bottom: 1rem;
+  }
+  .gradient-text {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--accent-7));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .lede {
+    font-size: clamp(1.05rem, 1.7vw, 1.5rem);
+    color: var(--fg-dim);
+    font-weight: 400;
+    max-width: 60ch;
+    line-height: 1.5;
+    margin-bottom: 3rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.4rem;
+  }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 22px;
+    padding: 1.7rem 1.7rem 1.6rem;
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 20px 44px rgba(0,0,0,0.12);
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--c, var(--accent));
+  }
+
+  .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 13px;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #fff;
+    background: var(--c, var(--accent));
+    margin-bottom: 1.1rem;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent);
+  }
+
+  .card h3 {
+    font-size: 1.35rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.55rem;
+  }
+  .card p {
+    font-size: 0.98rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+  .tag {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, transparent);
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+  }
+
+  footer {
+    margin-top: 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 3rem;
+    align-items: center;
+    color: var(--fg-dim);
+    font-size: 0.95rem;
+  }
+  footer strong { color: var(--fg); font-weight: 650; }
+  footer .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; margin-right: 0.5rem; vertical-align: middle; }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">Claude Code · 零基础 AI 编程课</div>
+    <h1>七节课，<span class="gradient-text">从"哇"到能上线</span></h1>
+    <p class="lede">面向零基础成年人的 AI 编程实战课。从第一次见证 AI 的威力，到亲手做出一个能联网、有数据库、可上线的应用 —— 你需要的不是写代码，而是学会指挥 AI。</p>
+
+    <div class="grid">
+      <div class="card" style="--c: var(--accent-5)">
+        <div class="num">1</div>
+        <h3>"哇"时刻 + 环境搭建</h3>
+        <p>亲眼见证 AI 在 10 分钟内把想法变成可用网页，并装好 Claude Code 开发环境。</p>
+        <span class="tag">点燃 · 起步</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent-4)">
+        <div class="num">2</div>
+        <h3>AI 思维模型 + 初次动手</h3>
+        <p>建立"指挥 AI"的思维：写任务书 → 生成 → 评估 → 优化。完成人生第一个作品。</p>
+        <span class="tag">核心循环</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent-3)">
+        <div class="num">3</div>
+        <h3>Harness Engineering</h3>
+        <p>给 AI 编程助手装上"缰绳"：用"引导"和"反馈"让 AI 输出稳定、可控、靠谱。</p>
+        <span class="tag">引导 · 反馈</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent)">
+        <div class="num">4</div>
+        <h3>客户端、服务器与联网应用</h3>
+        <p>从纯 HTML 小游戏走向真正的"联网应用"，搞懂前端、后端与它们如何协作。</p>
+        <span class="tag">Web 应用</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent-2)">
+        <div class="num">5</div>
+        <h3>Claude Code Skill</h3>
+        <p>八个章节从认知到上手，学会为 AI 打造可复用的"技能"，让它做得更专业。</p>
+        <span class="tag">进阶能力</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent-6)">
+        <div class="num">6</div>
+        <h3>AI 数据分析与可视化</h3>
+        <p>数据分析是从数据里找答案，可视化是把答案讲清楚 —— AI 让门槛大幅降低。</p>
+        <span class="tag">数据 · 图表</span>
+      </div>
+
+      <div class="card" style="--c: var(--accent-7)">
+        <div class="num">7</div>
+        <h3>迁移到 Supabase 数据库</h3>
+        <p>从 JSON 文件升级到真正的云数据库，让你的应用能存数据、可扩展、能上线。</p>
+        <span class="tag">数据库 · 上线</span>
+      </div>
+    </div>
+
+    <footer>
+      <span><span class="dot"></span><strong>7</strong> 次课 · 每次 2 小时</span>
+      <span><span class="dot"></span>面向<strong>零基础</strong>成年人</span>
+      <span><span class="dot"></span>主线：<strong>从想法到上线的完整闭环</strong></span>
+    </footer>
+  </main>
+</body>
+</html>
